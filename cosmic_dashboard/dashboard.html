@@ -100,6 +100,24 @@
       transform: translateY(-1px);
     }
 
+    #dateSelector {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+      font-family: var(--font-sans);
+      transition: var(--transition-smooth);
+    }
+    #dateSelector:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 12px var(--color-primary-glow);
+    }
+
     .theme-switch-wrapper {
       display: inline-flex;
       align-items: center;
@@ -763,6 +781,7 @@
           </div>
           <div class="update-time">更新時間: <span id="update-time-text">-</span></div>
         </div>
+        <div id="date-selector-wrapper" style="display: flex; align-items: center;"></div>
         <a href="../dashboard.html" class="btn-nav">📊 控盤掃描</a>
         <!-- Theme Toggle Slider -->
         <div class="theme-switch-wrapper" title="深淺色模式切換">
@@ -842,13 +861,17 @@
 
     async function loadData() {
       try {
-        const response = await fetch('cosmic_cube_data.json?t=' + Date.now());
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        const fileName = dateParam ? `cosmic_cube_data_${dateParam}.json` : 'cosmic_cube_data.json';
+        
+        const response = await fetch(fileName + '?t=' + Date.now());
         globalData = await response.json();
         renderDashboard();
       } catch (error) {
         console.error('無法載入資料:', error);
         document.getElementById('stock-list-wrapper').innerHTML = 
-          `<div class="empty-state">資料載入失敗，請確認同目錄下是否存在 cosmic_cube_data.json</div>`;
+          `<div class="empty-state">資料載入失敗，請確認該日期之 cosmic_cube_data_*.json 是否已產出。</div>`;
       }
     }
 
@@ -868,6 +891,9 @@
       } else {
         regimeBadge.className = 'regime-badge bear';
       }
+
+      // 1.5 渲染日期下拉選單
+      renderDateSelector();
 
       // 2. 渲染精選警報
       renderElitePicks();
@@ -1076,6 +1102,38 @@
     function switchAiTab(index) {
       window.currentAiVersion = index;
       renderAiVersion(index);
+    }
+
+    function renderDateSelector() {
+      const wrapper = document.getElementById('date-selector-wrapper');
+      if (!wrapper) return;
+      
+      const dates = globalData.available_dates || [];
+      if (dates.length === 0) {
+        const datePart = (globalData.update_time || '').split(' ')[0];
+        if (datePart) dates.push(datePart);
+      }
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedDate = urlParams.get('date') || (globalData.update_time || '').split(' ')[0];
+      
+      let optionsHtml = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+      
+      wrapper.innerHTML = `
+        <select id="dateSelector" onchange="if(this.value) window.location.href='?date='+this.value">
+          <option value="">切換歷史紀錄...</option>
+          ${optionsHtml}
+        </select>
+      `;
+      
+      setTimeout(() => {
+        const sel = document.getElementById('dateSelector');
+        if (sel) {
+          Array.from(sel.options).forEach(opt => {
+            if (opt.value === selectedDate) opt.selected = true;
+          });
+        }
+      }, 0);
     }
 
     function toggleAIPanel() {
