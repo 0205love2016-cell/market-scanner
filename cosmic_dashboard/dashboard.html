@@ -649,7 +649,32 @@
     }
 
     .ai-panel.expanded .ai-body {
-      max-height: 800px;
+      max-height: 2000px;
+    }
+
+    .ai-tabs-container {
+      display: flex;
+    }
+    .ai-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: var(--transition-smooth);
+      border-bottom: 2px solid transparent;
+    }
+    .ai-tab-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-surface-hover);
+    }
+    .ai-tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+      background: var(--color-primary-glow);
     }
 
     .ai-content {
@@ -768,6 +793,11 @@
         </svg>
       </div>
       <div class="ai-body">
+        <div class="ai-tabs-container" id="ai-tabs-container" style="display: none; padding: 12px 24px 0 24px; gap: 8px; border-bottom: 1px solid var(--border-light);">
+          <button class="ai-tab-btn active" onclick="switchAiTab(0)">分析一</button>
+          <button class="ai-tab-btn" onclick="switchAiTab(1)">分析二</button>
+          <button class="ai-tab-btn" onclick="switchAiTab(2)">分析三</button>
+        </div>
         <div class="ai-content" id="ai-report-content">
           <!-- 戰報內容 -->
         </div>
@@ -847,10 +877,19 @@
 
       // 4. 渲染 AI 戰報
       const aiReportDiv = document.getElementById('ai-report-content');
+      const aiTabsContainer = document.getElementById('ai-tabs-container');
       if (globalData.ai_analysis) {
-        aiReportDiv.innerHTML = parseMarkdown(globalData.ai_analysis);
+        if (Array.isArray(globalData.ai_analysis)) {
+          aiTabsContainer.style.display = 'flex';
+          window.currentAiVersion = window.currentAiVersion || 0;
+          renderAiVersion(window.currentAiVersion);
+        } else {
+          aiTabsContainer.style.display = 'none';
+          aiReportDiv.innerHTML = parseMarkdown(globalData.ai_analysis);
+        }
         document.getElementById('ai-panel').classList.add('expanded');
       } else {
+        aiTabsContainer.style.display = 'none';
         aiReportDiv.innerHTML = '<p>今日無 AI 戰略報告。</p>';
       }
     }
@@ -1015,6 +1054,28 @@
       if (!isActive) {
         itemElement.classList.add('active');
       }
+    }
+
+    function renderAiVersion(index) {
+      const aiReportDiv = document.getElementById('ai-report-content');
+      if (globalData && globalData.ai_analysis && Array.isArray(globalData.ai_analysis)) {
+        const text = globalData.ai_analysis[index] || '（今日無此分析版本資料）';
+        aiReportDiv.innerHTML = parseMarkdown(text);
+        
+        // 更新 Tab 按鈕狀態
+        document.querySelectorAll('.ai-tab-btn').forEach((btn, i) => {
+          if (i === index) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+    }
+
+    function switchAiTab(index) {
+      window.currentAiVersion = index;
+      renderAiVersion(index);
     }
 
     function toggleAIPanel() {
