@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>買進優先序 - 全市場控盤掃描</title>
+<meta name="description" content="台股全市場控盤掃描買進優先順序儀表板，以綜合評分排列最佳進場標的。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --bg-primary: #0a0e27;
+  --bg-secondary: #0f1435;
+  --bg-card: rgba(15, 20, 53, 0.75);
+  --bg-card-hover: rgba(25, 32, 72, 0.85);
+  --bg-surface: rgba(20, 25, 60, 0.6);
+
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --primary-glow: rgba(99, 102, 241, 0.25);
+  --success: #10b981;
+  --success-light: #34d399;
+  --warning: #f59e0b;
+  --warning-light: #fbbf24;
+  --danger: #ef4444;
+  --danger-light: #f87171;
+  --info: #3b82f6;
+  --info-light: #60a5fa;
+  --gold: #f0c674;
+  --gold-glow: rgba(240, 198, 116, 0.15);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-bright: #f8fafc;
+
+  --border-subtle: rgba(99, 102, 241, 0.12);
+  --border-medium: rgba(99, 102, 241, 0.25);
+
+  --glass-bg: rgba(15, 20, 53, 0.65);
+  --glass-border: rgba(99, 102, 241, 0.15);
+  --glass-blur: 20px;
+
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-normal: 250ms var(--ease-out);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 30%, rgba(99, 102, 241, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 80% 70%, rgba(16, 185, 129, 0.04) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app { position: relative; z-index: 1; max-width: 1500px; margin: 0 auto; padding: 20px; }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.hdr {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  padding: 20px 28px;
+  background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  margin-bottom: 24px;
+}
+
+.hdr-left { display: flex; align-items: center; gap: 16px; }
+
+.hdr-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--gold), #e8a838);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(240, 198, 116, 0.3);
+  font-size: 20px;
+}
+
+.hdr h1 {
+  font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-bright), var(--gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.hdr-date { font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px; }
+
+.hdr-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.btn-nav {
+  padding: 8px 18px;
+  background: var(--glass-bg); backdrop-filter: blur(10px);
+  border: 1px solid var(--border-medium); border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+  transition: all var(--transition-fast);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+.btn-nav:hover {
+  background: var(--primary-glow); border-color: var(--primary);
+  color: var(--text-bright); box-shadow: var(--shadow-glow);
+}
+
+/* ============================================================
+   KPI STRIP
+   ============================================================ */
+.kpi-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi {
+  padding: 18px 20px;
+  background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: relative; overflow: hidden;
+  transition: transform var(--transition-normal);
+}
+
+.kpi:hover { transform: translateY(-2px); }
+
+.kpi::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 100%; height: 3px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.kpi-scan::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+.kpi-buy::before { background: linear-gradient(90deg, var(--success), var(--success-light)); }
+.kpi-watch::before { background: linear-gradient(90deg, var(--warning), var(--warning-light)); }
+.kpi-high::before { background: linear-gradient(90deg, var(--gold), #e8a838); }
+.kpi-risk::before { background: linear-gradient(90deg, var(--danger), var(--danger-light)); }
+
+.kpi-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-val { font-size: 1.8rem; font-weight: 800; line-height: 1.2; margin-top: 4px; }
+.kpi-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+.kpi-scan .kpi-val { color: var(--primary-light); }
+.kpi-buy .kpi-val { color: var(--success-light); }
+.kpi-watch .kpi-val { color: var(--warning-light); }
+.kpi-high .kpi-val { color: var(--gold); }
+.kpi-risk .kpi-val { color: var(--danger-light); }
+
+/* ============================================================
+   FILTER BAR
+   ============================================================ */
+.filter-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+
+.filter-bar label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.pill-group { display: flex; gap: 0; }
+
+.pill-btn {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pill-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.pill-btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.pill-btn:not(:first-child) { margin-left: -1px; }
+
+.pill-btn.active {
+  background: var(--primary-glow); border-color: var(--primary);
+  color: var(--primary-light); font-weight: 600; z-index: 1; position: relative;
+}
+
+.pill-btn:hover:not(.active) { background: rgba(99, 102, 241, 0.08); color: var(--text-secondary); }
+
+.filter-sep { width: 1px; height: 24px; background: var(--border-subtle); }
+
+.filter-select {
+  padding: 6px 12px;
+  background: var(--bg-secondary); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  cursor: pointer; outline: none;
+}
+
+.filter-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+.filter-select option { background: var(--bg-secondary); color: var(--text-primary); }
+
+/* ============================================================
+   TWO-COLUMN MAIN LAYOUT
+   ============================================================ */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ============================================================
+   BUY ORDER LIST (LEFT)
+   ============================================================ */
+.buy-list-panel {
+  background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.buy-list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.buy-list-title { font-size: 1rem; font-weight: 700; color: var(--text-bright); }
+.buy-list-count { font-size: 0.8rem; color: var(--text-muted); }
+
+/* Tier dividers */
+.tier-divider {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 24px;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tier-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.tier-line { flex: 1; height: 1px; }
+
+.tier-strong-buy .tier-label { color: var(--success-light); }
+.tier-strong-buy .tier-line { background: linear-gradient(90deg, var(--success), transparent); }
+.tier-buy .tier-label { color: var(--info-light); }
+.tier-buy .tier-line { background: linear-gradient(90deg, var(--info), transparent); }
+.tier-watch .tier-label { color: var(--warning-light); }
+.tier-watch .tier-line { background: linear-gradient(90deg, var(--warning), transparent); }
+.tier-avoid .tier-label { color: var(--danger-light); }
+.tier-avoid .tier-line { background: linear-gradient(90deg, var(--danger), transparent); }
+
+/* Stock Row */
+.stock-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 90px 200px 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  position: relative;
+}
+
+.stock-row:hover { background: var(--bg-card-hover); }
+
+.stock-row.expanded { background: var(--bg-card-hover); border-bottom-color: transparent; }
+
+/* Rank circle */
+.rank-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 800;
+  flex-shrink: 0;
+}
+
+.rank-gold { background: linear-gradient(135deg, rgba(240,198,116,0.25), rgba(240,198,116,0.08)); color: var(--gold); border: 1px solid rgba(240,198,116,0.35); }
+.rank-silver { background: linear-gradient(135deg, rgba(148,163,184,0.2), rgba(148,163,184,0.06)); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+.rank-bronze { background: linear-gradient(135deg, rgba(180,140,100,0.2), rgba(180,140,100,0.06)); color: #d4a574; border: 1px solid rgba(180,140,100,0.3); }
+.rank-normal { background: rgba(99,102,241,0.08); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+
+/* Stock info */
+.stock-info { min-width: 0; }
+.stock-id-name { display: flex; align-items: baseline; gap: 6px; }
+.s-id { font-weight: 700; color: var(--text-bright); font-size: 0.92rem; }
+.s-name { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-summary { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* Price col */
+.price-col { text-align: right; }
+.s-price { font-weight: 600; color: var(--text-bright); font-size: 0.88rem; }
+.s-change { font-size: 0.75rem; font-weight: 600; }
+.chg-up { color: var(--danger-light); }
+.chg-dn { color: var(--success-light); }
+.chg-flat { color: var(--text-muted); }
+
+/* Score bars inline */
+.score-bars { display: flex; flex-direction: column; gap: 4px; }
+
+.score-inline {
+  display: flex; align-items: center; gap: 6px;
+}
+
+.score-lbl { font-size: 0.62rem; color: var(--text-muted); width: 18px; text-align: right; flex-shrink: 0; font-weight: 600; }
+
+.score-track {
+  flex: 1; height: 5px;
+  background: rgba(255,255,255,0.06); border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-fill { height: 100%; border-radius: 3px; transition: width 0.6s var(--ease-out); }
+
+.score-num { font-size: 0.68rem; font-weight: 700; min-width: 28px; text-align: right; }
+
+.fill-green { background: linear-gradient(90deg, var(--success), var(--success-light)); }
+.fill-yellow { background: linear-gradient(90deg, var(--warning), var(--warning-light)); }
+.fill-red { background: linear-gradient(90deg, var(--danger), var(--danger-light)); }
+.fill-blue { background: linear-gradient(90deg, var(--info), var(--info-light)); }
+
+/* Badges col */
+.badges-col { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  font-size: 0.66rem; font-weight: 600; white-space: nowrap;
+}
+
+.b-rally { background: rgba(16,185,129,0.15); color: var(--success-light); border: 1px solid rgba(16,185,129,0.3); }
+.b-accum { background: rgba(59,130,246,0.15); color: var(--info-light); border: 1px solid rgba(59,130,246,0.3); }
+.b-wash { background: rgba(245,158,11,0.15); color: var(--warning-light); border: 1px solid rgba(245,158,11,0.3); }
+.b-dist { background: rgba(239,68,68,0.15); color: var(--danger-light); border: 1px solid rgba(239,68,68,0.3); }
+.b-hold { background: rgba(16,185,129,0.12); color: var(--success-light); border: 1px solid rgba(16,185,129,0.25); }
+.b-watch { background: rgba(245,158,11,0.12); color: var(--warning-light); border: 1px solid rgba(245,158,11,0.25); }
+.b-sell { background: rgba(239,68,68,0.12); color: var(--danger-light); border: 1px solid rgba(239,68,68,0.25); }
+
+/* Expanded detail panel */
+.detail-expand {
+  display: none;
+  padding: 0 24px;
+  background: rgba(12, 16, 42, 0.92);
+  border-bottom: 2px solid var(--primary-glow);
+}
+
+.detail-expand.open {
+  display: block;
+  padding: 20px 24px;
+  animation: slideDown 0.35s var(--ease-out);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.detail-inner {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+}
+
+/* Radar / gauge section */
+.detail-gauges {
+  display: flex; flex-direction: column; gap: 12px; align-items: center;
+}
+
+.gauge-ring {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+
+.gauge-inner {
+  position: absolute; inset: 5px; border-radius: 50%;
+  background: rgba(12,16,42,0.95);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+.gauge-val { font-size: 1.1rem; font-weight: 800; }
+.gauge-lbl { font-size: 0.6rem; color: var(--text-muted); }
+
+.detail-metrics {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  font-size: 0.78rem;
+}
+
+.dm-label { color: var(--text-muted); }
+.dm-value { color: var(--text-secondary); text-align: right; font-weight: 500; }
+.dm-value.positive { color: var(--danger-light); }
+.dm-value.negative { color: var(--success-light); }
+
+/* Detail AI section */
+.detail-ai {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: rgba(99,102,241,0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7;
+  white-space: pre-line;
+  max-height: 250px; overflow-y: auto;
+}
+
+.detail-links {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+
+.detail-link {
+  padding: 6px 14px; border-radius: var(--radius-sm);
+  font-size: 0.78rem; font-weight: 500; text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all var(--transition-fast);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+.dl-yahoo { background: rgba(113,11,234,0.1); color: #c48dfc; border-color: rgba(113,11,234,0.2); }
+.dl-yahoo:hover { background: rgba(113,11,234,0.2); color: #fff; }
+.dl-wantgoo { background: rgba(59,130,246,0.1); color: var(--info-light); border-color: rgba(59,130,246,0.2); }
+.dl-wantgoo:hover { background: rgba(59,130,246,0.2); color: #fff; }
+
+/* ============================================================
+   RIGHT SIDEBAR
+   ============================================================ */
+.sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+.side-card {
+  background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 20px;
+}
+
+.side-title {
+  font-size: 0.85rem; font-weight: 700; color: var(--text-bright);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chart-wrap { position: relative; height: 220px; }
+.chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
+.chart-wrap-tall { height: 300px; }
+
+/* Tier summary in sidebar */
+.tier-summary { display: flex; flex-direction: column; gap: 8px; }
+
+.tier-row {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.tier-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+
+.tier-row-label { font-size: 0.78rem; color: var(--text-secondary); flex: 1; }
+.tier-row-count { font-size: 0.85rem; font-weight: 700; color: var(--text-bright); }
+
+.scoring-formula {
+  font-size: 0.72rem; color: var(--text-muted); line-height: 1.7;
+  padding: 10px 14px;
+  background: rgba(99,102,241,0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+}
+
+.scoring-formula code {
+  color: var(--primary-light); font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem;
+}
+
+/* ============================================================
+   LOADING / ERROR
+   ============================================================ */
+.loading-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 400px; gap: 16px;
+}
+
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid var(--border-subtle); border-top-color: var(--gold);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text { font-size: 0.9rem; color: var(--text-muted); }
+
+.error-wrap {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 300px; gap: 12px; padding: 32px;
+}
+
+.error-text { font-size: 1rem; color: var(--danger-light); font-weight: 600; }
+.error-detail { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  text-align: center; padding: 20px; margin-top: 24px;
+  font-size: 0.72rem; color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.4); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .sidebar { order: -1; }
+  .stock-row { grid-template-columns: 32px 1fr 80px 160px 100px; gap: 8px; padding: 10px 16px; }
+}
+
+@media (max-width: 800px) {
+  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .stock-row { grid-template-columns: 28px 1fr 70px; gap: 6px; padding: 10px 14px; }
+  .score-bars, .badges-col { display: none; }
+  .filter-bar { gap: 8px; }
+  .hdr { padding: 16px 20px; }
+  .detail-inner { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .app { padding: 12px; }
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .hdr { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Loading -->
+  <div class="loading-wrap" id="loadingState">
+    <div class="spinner"></div>
+    <div class="loading-text">載入掃描資料中...</div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-wrap" id="errorState">
+    <div class="error-text">資料載入失敗</div>
+    <div class="error-detail" id="errorDetail"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="mainContent" style="display:none;">
+
+    <!-- HEADER -->
+    <header class="hdr">
+      <div class="hdr-left">
+        <div class="hdr-icon">🎯</div>
+        <div>
+          <h1>買進優先序</h1>
+          <div class="hdr-date" id="scanDate"></div>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <a href="dashboard.html" class="btn-nav">📋 詳細表格版</a>
+      </div>
+    </header>
+
+    <!-- KPI STRIP -->
+    <section class="kpi-strip" id="kpiStrip"></section>
+
+    <!-- FILTER BAR -->
+    <section class="filter-bar" id="filterBar">
+      <label>主力階段</label>
+      <div class="pill-group" id="stageFilter">
+        <button class="pill-btn active" data-val="all">全部</button>
+        <button class="pill-btn" data-val="拉抬">拉抬</button>
+        <button class="pill-btn" data-val="吸籌">吸籌</button>
+        <button class="pill-btn" data-val="洗盤">洗盤</button>
+        <button class="pill-btn" data-val="出貨">出貨</button>
+      </div>
+      <div class="filter-sep"></div>
+      <label>建議</label>
+      <div class="pill-group" id="recFilter">
+        <button class="pill-btn active" data-val="all">全部</button>
+      </div>
+      <div class="filter-sep"></div>
+      <label>類股</label>
+      <select class="filter-select" id="catFilter"><option value="all">全部</option></select>
+    </section>
+
+    <!-- MAIN 2-COL -->
+    <div class="main-grid">
+
+      <!-- LEFT: Buy order list -->
+      <div class="buy-list-panel" id="buyListPanel">
+        <div class="buy-list-header">
+          <div class="buy-list-title">建議買進順序</div>
+          <div class="buy-list-count" id="listCount"></div>
+        </div>
+        <div id="buyListBody"></div>
+      </div>
+
+      <!-- RIGHT: Sidebar charts -->
+      <aside class="sidebar" id="sidebar">
+        <!-- Tier summary -->
+        <div class="side-card" id="tierCard">
+          <div class="side-title">分級概覽</div>
+          <div class="tier-summary" id="tierSummary"></div>
+          <div class="scoring-formula">
+            <strong>綜合評分公式</strong><br>
+            <code>Score = RP5D x 0.40 + CS x 0.30 - ES x 0.20 + StageBonus</code><br>
+            RP5D = 5 日拉抬機率<br>
+            CS = 控盤分數<br>
+            ES = 出場風險分數（低佳）<br>
+            StageBonus：吸籌 +5 / 拉抬 +3
+          </div>
+        </div>
+
+        <!-- Glossary card -->
+        <div class="side-card">
+          <div class="side-title">指標與建議解析</div>
+          <div class="scoring-formula" style="font-size: 0.85rem; line-height: 1.4;">
+            <strong>【核心評分指標】</strong><br>
+            <span style="color:var(--color-primary);">CS (控盤分數)</span>：衡量主力對股票的控制力度與吸籌積極度。分數越高(>60)，籌碼越集中，易漲難跌。<br>
+            <span style="color:var(--color-accent);">RP (拉抬機率)</span>：短線發動漲勢機率。分數越高(>80%)，壓力鍋即將掀開，隨時發動。<br>
+            <span style="color:var(--color-danger);">ES (出場風險)</span>：主力趁高倒貨風險。分數越高(>40)，風險極大，主力可能正撤退。<br>
+            <hr style="border:0; border-top:1px solid var(--bg-card-hover); margin: 8px 0;">
+            <strong>【操作建議】</strong><br>
+            <span style="color:var(--color-primary);">買進觀察</span>：高控盤 + 低風險 + 有動能。最佳右側順勢買點。<br>
+            <span style="color:var(--color-accent);">農底觀察</span>：股價跌入虧損攤平區且主力未放棄。最佳左側逆勢買點。<br>
+            <span style="color:#64748B;">持有</span>：主力溫和控盤，短線動能未出。耐心等待。<br>
+            <span style="color:#F59E0B;">觀望</span>：分數平庸無明顯訊號。建議避開。<br>
+            <span style="color:var(--color-danger);">減碼</span>：進入獲利出貨區或高檔倒貨。盡速了結/避開。<br>
+          </div>
+        </div>
+        <!-- Stage donut -->
+        <div class="side-card">
+          <div class="side-title">主力階段分布</div>
+          <div class="chart-wrap"><canvas id="stageChart"></canvas></div>
+        </div>
+
+        <!-- CS vs ES scatter -->
+        <div class="side-card">
+          <div class="side-title">CS vs ES 象限圖</div>
+          <div class="chart-wrap chart-wrap-tall"><canvas id="quadrantChart"></canvas></div>
+        </div>
+      </aside>
+
+    </div>
+
+    <footer class="footer">
+      Cosmic Cube v17 - Market Scanner | 買進優先序儀表板 | 資料產生時間以 JSON 檔案為準
+    </footer>
+
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   CONFIG & STATE
+   ================================================================ */
+const TIER_CONFIG = {
+  STRONG_BUY: { min: 55, label: '強力買進', color: '#10b981', dotColor: 'var(--success)' },
+  BUY:        { min: 45, label: '建議買進', color: '#3b82f6', dotColor: 'var(--info)' },
+  WATCH:      { min: 35, label: '觀望',     color: '#f59e0b', dotColor: 'var(--warning)' },
+  AVOID:      { min: 0,  label: '暫不建議', color: '#ef4444', dotColor: 'var(--danger)' },
+};
+
+const STAGE_BADGE = {
+  '拉抬': 'b-rally', '主力高度控盤': 'b-rally',
+  '吸籌': 'b-accum', '初期吸籌': 'b-accum',
+  '洗盤': 'b-wash', '吸籌/洗盤': 'b-wash',
+  '出貨': 'b-dist',
+};
+
+const STAGE_BONUS = {
+  '吸籌': 5, '初期吸籌': 5,
+  '拉抬': 3, '主力高度控盤': 3, '主力控盤中': 3,
+  '洗盤': 0, '吸籌/洗盤': 2,
+  '出貨': -5,
+};
+
+const STAGE_GROUP = {
+  '主力高度控盤': '拉抬',
+  '主力控盤中': '拉抬',
+  '初期吸籌': '吸籌',
+  '吸籌/洗盤': '吸籌',
+};
+
+const STATE = {
+  rawData: null,
+  ranked: [],
+  filtered: [],
+  expandedId: null,
+  stageChart: null,
+  quadrantChart: null,
+  filterStage: 'all',
+  filterRec: 'all',
+  filterCat: 'all',
+};
+
+/* ================================================================
+   COMPOSITE SCORE
+   ================================================================ */
+function compositeScore(s) {
+  const rpWeight = 0.40;
+  const csWeight = 0.30;
+  const esWeight = 0.20;
+  const stageBonus = STAGE_BONUS[s.stage] || 0;
+  return (s.rally_prob_5d * rpWeight) + (s.control_score * csWeight) - (s.exit_score * esWeight) + stageBonus;
+}
+
+function getTier(score) {
+  if (score >= TIER_CONFIG.STRONG_BUY.min) return 'STRONG_BUY';
+  if (score >= TIER_CONFIG.BUY.min) return 'BUY';
+  if (score >= TIER_CONFIG.WATCH.min) return 'WATCH';
+  return 'AVOID';
+}
+
+/* ================================================================
+   DATA LOADING
+   ================================================================ */
+async function loadData() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const dateParam = params.get('date');
+    const fileName = dateParam ? `dashboard_data_${dateParam}.json` : 'dashboard_data.json';
+    const resp = await fetch(`${fileName}?t=${Date.now()}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    STATE.rawData = data;
+
+    /* rank all stocks */
+    STATE.ranked = data.stocks.map(s => ({
+      ...s,
+      _score: compositeScore(s),
+      _stageGroup: STAGE_GROUP[s.stage] || s.stage,
+    })).sort((a, b) => b._score - a._score);
+
+    STATE.filtered = [...STATE.ranked];
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    renderAll();
+  } catch (err) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'flex';
+    document.getElementById('errorDetail').textContent = `${err.message}`;
+  }
+}
+
+/* ================================================================
+   RENDER ALL
+   ================================================================ */
+function renderAll() {
+  renderHeader();
+  renderKPI();
+  buildFilters();
+  renderBuyList();
+  renderTierSummary();
+  renderStageChart();
+  renderQuadrantChart();
+  bindEvents();
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+function renderHeader() {
+  const d = STATE.rawData;
+  let options = '';
+  if (d.available_dates && d.available_dates.length > 0) {
+    options = d.available_dates.map(dt => `<option value="${dt}">${dt}</option>`).join('');
+  } else {
+    options = `<option value="${d.scan_date}">${d.scan_date}</option>`;
+  }
+  document.getElementById('scanDate').innerHTML = `
+    掃描日期：${d.scan_date}
+    <select id="historySelect" onchange="if(this.value) window.location.href='?date='+this.value"
+      style="margin-left:8px;background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:4px;padding:2px 6px;font-size:0.78rem;">
+      <option value="">切換日期...</option>
+      ${options}
+    </select>
+  `;
+}
+
+/* ================================================================
+   KPI
+   ================================================================ */
+function renderKPI() {
+  const stocks = STATE.filtered;
+  const total = STATE.rawData.total_scanned;
+  const strongBuy = stocks.filter(s => getTier(s._score) === 'STRONG_BUY').length;
+  const buy = stocks.filter(s => getTier(s._score) === 'BUY').length;
+  const highRally = stocks.filter(s => s.rally_prob_5d >= 70).length;
+  const highRisk = stocks.filter(s => s.exit_score >= 40).length;
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="kpi kpi-scan">
+      <div class="kpi-label">掃描總數</div>
+      <div class="kpi-val">${total.toLocaleString()}</div>
+      <div class="kpi-sub">Stage3 篩出 ${stocks.length} 檔</div>
+    </div>
+    <div class="kpi kpi-buy">
+      <div class="kpi-label">強力買進</div>
+      <div class="kpi-val">${strongBuy}</div>
+      <div class="kpi-sub">綜合評分 >= ${TIER_CONFIG.STRONG_BUY.min}</div>
+    </div>
+    <div class="kpi kpi-watch">
+      <div class="kpi-label">建議買進</div>
+      <div class="kpi-val">${buy}</div>
+      <div class="kpi-sub">綜合評分 ${TIER_CONFIG.BUY.min} - ${TIER_CONFIG.STRONG_BUY.min - 1}</div>
+    </div>
+    <div class="kpi kpi-high">
+      <div class="kpi-label">高拉抬機率</div>
+      <div class="kpi-val">${highRally}</div>
+      <div class="kpi-sub">Rally Prob 5D >= 70%</div>
+    </div>
+    <div class="kpi kpi-risk">
+      <div class="kpi-label">高出場風險</div>
+      <div class="kpi-val">${highRisk}</div>
+      <div class="kpi-sub">Exit Score >= 40</div>
+    </div>
+  `;
+}
+
+/* ================================================================
+   FILTERS
+   ================================================================ */
+function buildFilters() {
+  /* Rec pills */
+  const recs = [...new Set(STATE.ranked.map(s => s.recommendation))].sort();
+  const recGroup = document.getElementById('recFilter');
+  recs.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-btn';
+    btn.dataset.val = r;
+    btn.textContent = r;
+    recGroup.appendChild(btn);
+  });
+
+  /* Category select */
+  const cats = [...new Set(STATE.ranked.map(s => s.category).filter(Boolean))].sort();
+  const catSel = document.getElementById('catFilter');
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    catSel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  STATE.filtered = STATE.ranked.filter(s => {
+    if (STATE.filterStage !== 'all') {
+      const group = s._stageGroup;
+      if (group !== STATE.filterStage) return false;
+    }
+    if (STATE.filterRec !== 'all' && s.recommendation !== STATE.filterRec) return false;
+    if (STATE.filterCat !== 'all' && s.category !== STATE.filterCat) return false;
+    return true;
+  });
+  STATE.expandedId = null;
+  renderKPI();
+  renderBuyList();
+  renderTierSummary();
+  renderStageChart();
+  renderQuadrantChart();
+}
+
+/* ================================================================
+   BUY LIST
+   ================================================================ */
+function renderBuyList() {
+  const stocks = STATE.filtered;
+  document.getElementById('listCount').textContent = `${stocks.length} 檔`;
+
+  if (stocks.length === 0) {
+    document.getElementById('buyListBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">無符合條件的標的</div>';
+    return;
+  }
+
+  let html = '';
+  let currentTier = null;
+
+  stocks.forEach((s, idx) => {
+    const tier = getTier(s._score);
+
+    /* Tier divider */
+    if (tier !== currentTier) {
+      currentTier = tier;
+      const cfg = TIER_CONFIG[tier];
+      const tierCls = tier === 'STRONG_BUY' ? 'tier-strong-buy' : tier === 'BUY' ? 'tier-buy' : tier === 'WATCH' ? 'tier-watch' : 'tier-avoid';
+      html += `<div class="tier-divider ${tierCls}"><span class="tier-label">${cfg.label}</span><div class="tier-line"></div></div>`;
+    }
+
+    const rank = idx + 1;
+    const rankCls = rank <= 3 ? (rank === 1 ? 'rank-gold' : rank === 2 ? 'rank-silver' : 'rank-bronze') : 'rank-normal';
+
+    /* Change */
+    const chgCls = s.change_pct > 0 ? 'chg-up' : s.change_pct < 0 ? 'chg-dn' : 'chg-flat';
+    const chgPrefix = s.change_pct > 0 ? '+' : '';
+
+    /* Score bars */
+    const csColor = s.control_score >= 60 ? 'fill-green' : s.control_score >= 40 ? 'fill-yellow' : 'fill-red';
+    const csTextColor = s.control_score >= 60 ? 'var(--success-light)' : s.control_score >= 40 ? 'var(--warning-light)' : 'var(--danger-light)';
+    const rpColor = s.rally_prob_5d >= 60 ? 'fill-green' : s.rally_prob_5d >= 40 ? 'fill-yellow' : 'fill-red';
+    const rpTextColor = s.rally_prob_5d >= 60 ? 'var(--success-light)' : s.rally_prob_5d >= 40 ? 'var(--warning-light)' : 'var(--danger-light)';
+    const esColor = s.exit_score < 20 ? 'fill-green' : s.exit_score < 35 ? 'fill-yellow' : 'fill-red';
+    const esTextColor = s.exit_score < 20 ? 'var(--success-light)' : s.exit_score < 35 ? 'var(--warning-light)' : 'var(--danger-light)';
+
+    /* Stage badge */
+    const stageBdg = STAGE_BADGE[s.stage] || 'b-wash';
+    const stageText = s.stage.replace('主力高度', '').replace('主力', '').replace('初期', '');
+
+    /* Summary (truncated) */
+    const summary = s.plain_summary || '';
+
+    const isExpanded = STATE.expandedId === s.stock_id;
+
+    html += `
+      <div class="stock-row ${isExpanded ? 'expanded' : ''}" data-sid="${s.stock_id}" onclick="toggleExpand('${s.stock_id}')">
+        <div class="rank-num ${rankCls}">${rank}</div>
+        <div class="stock-info">
+          <div class="stock-id-name">
+            <span class="s-id">${s.stock_id}</span>
+            <span class="s-name">${esc(s.name)}</span>
+          </div>
+          <div class="s-summary" title="${esc(summary)}">${esc(summary)}</div>
+        </div>
+        <div class="price-col">
+          <div class="s-price">${s.close.toLocaleString()}</div>
+          <div class="s-change ${chgCls}">${chgPrefix}${s.change_pct.toFixed(2)}%</div>
+        </div>
+        <div class="score-bars">
+          <div class="score-inline">
+            <span class="score-lbl">CS</span>
+            <div class="score-track"><div class="score-fill ${csColor}" style="width:${s.control_score}%"></div></div>
+            <span class="score-num" style="color:${csTextColor}">${s.control_score.toFixed(1)}</span>
+          </div>
+          <div class="score-inline">
+            <span class="score-lbl">RP</span>
+            <div class="score-track"><div class="score-fill ${rpColor}" style="width:${s.rally_prob_5d}%"></div></div>
+            <span class="score-num" style="color:${rpTextColor}">${s.rally_prob_5d.toFixed(1)}</span>
+          </div>
+          <div class="score-inline">
+            <span class="score-lbl">ES</span>
+            <div class="score-track"><div class="score-fill ${esColor}" style="width:${s.exit_score}%"></div></div>
+            <span class="score-num" style="color:${esTextColor}">${s.exit_score.toFixed(1)}</span>
+          </div>
+        </div>
+        <div class="badges-col">
+          <span class="badge ${stageBdg}">${stageText}</span>
+        </div>
+      </div>
+      <div class="detail-expand ${isExpanded ? 'open' : ''}" id="detail-${s.stock_id}"></div>
+    `;
+  });
+
+  document.getElementById('buyListBody').innerHTML = html;
+
+  /* re-expand if needed */
+  if (STATE.expandedId) {
+    const s = STATE.ranked.find(x => x.stock_id === STATE.expandedId);
+    if (s) renderExpandedDetail(s);
+  }
+}
+
+/* ================================================================
+   EXPAND / COLLAPSE
+   ================================================================ */
+function toggleExpand(sid) {
+  if (STATE.expandedId === sid) {
+    /* collapse */
+    const el = document.getElementById(`detail-${sid}`);
+    if (el) { el.classList.remove('open'); el.innerHTML = ''; }
+    const row = document.querySelector(`.stock-row[data-sid="${sid}"]`);
+    if (row) row.classList.remove('expanded');
+    STATE.expandedId = null;
+    return;
+  }
+
+  /* collapse previous */
+  if (STATE.expandedId) {
+    const prev = document.getElementById(`detail-${STATE.expandedId}`);
+    if (prev) { prev.classList.remove('open'); prev.innerHTML = ''; }
+    const prevRow = document.querySelector(`.stock-row[data-sid="${STATE.expandedId}"]`);
+    if (prevRow) prevRow.classList.remove('expanded');
+  }
+
+  STATE.expandedId = sid;
+  const stock = STATE.ranked.find(x => x.stock_id === sid);
+  if (!stock) return;
+
+  const row = document.querySelector(`.stock-row[data-sid="${sid}"]`);
+  if (row) row.classList.add('expanded');
+
+  renderExpandedDetail(stock);
+}
+
+function renderExpandedDetail(s) {
+  const el = document.getElementById(`detail-${s.stock_id}`);
+  if (!el) return;
+
+  const csColor = s.control_score >= 60 ? 'var(--success)' : s.control_score >= 40 ? 'var(--warning)' : 'var(--danger)';
+  const rpColor = s.rally_prob_5d >= 60 ? 'var(--success)' : s.rally_prob_5d >= 40 ? 'var(--warning)' : 'var(--danger)';
+  const plCls = s.main_force_pl_pct >= 0 ? 'positive' : 'negative';
+  const plPrefix = s.main_force_pl_pct >= 0 ? '+' : '';
+
+  const tierLabel = TIER_CONFIG[getTier(s._score)].label;
+
+  el.innerHTML = `
+    <div class="detail-inner">
+      <div class="detail-gauges">
+        <div class="gauge-ring" style="background: conic-gradient(${csColor} 0deg, ${csColor} ${s.control_score * 3.6}deg, rgba(255,255,255,0.05) ${s.control_score * 3.6}deg);">
+          <div class="gauge-inner">
+            <span class="gauge-val" style="color:${csColor}">${s.control_score.toFixed(1)}</span>
+            <span class="gauge-lbl">Control</span>
+          </div>
+        </div>
+        <div class="gauge-ring" style="background: conic-gradient(${rpColor} 0deg, ${rpColor} ${s.rally_prob_5d * 3.6}deg, rgba(255,255,255,0.05) ${s.rally_prob_5d * 3.6}deg);">
+          <div class="gauge-inner">
+            <span class="gauge-val" style="color:${rpColor}">${s.rally_prob_5d.toFixed(1)}%</span>
+            <span class="gauge-lbl">Rally 5D</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:4px;">
+          <div style="font-size:0.68rem;color:var(--text-muted);">綜合評分</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--gold);">${s._score.toFixed(1)}</div>
+          <div style="font-size:0.68rem;color:var(--gold);opacity:0.8;">${tierLabel}</div>
+        </div>
+      </div>
+      <div>
+        <div class="detail-metrics">
+          <div class="dm-label">10D Rally</div><div class="dm-value">${s.rally_prob_10d?.toFixed(1) || '-'}%</div>
+          <div class="dm-label">20D Rally</div><div class="dm-value">${s.rally_prob_20d?.toFixed(1) || '-'}%</div>
+          <div class="dm-label">30D Rally</div><div class="dm-value">${s.rally_prob_30d?.toFixed(1) || '-'}%</div>
+          <div class="dm-label">主力均成本</div><div class="dm-value">${s.main_force_cost?.toLocaleString() || '-'}</div>
+          <div class="dm-label">主力獲利%</div><div class="dm-value ${plCls}">${plPrefix}${s.main_force_pl_pct?.toFixed(2) || '-'}%</div>
+          <div class="dm-label">主力庫存</div><div class="dm-value">${s.main_force_vol?.toLocaleString() || '-'} 張</div>
+          <div class="dm-label">Top5 集中度</div><div class="dm-value">${s.top_broker_concentration?.toFixed(1) || '-'}%</div>
+          <div class="dm-label">主要券商</div><div class="dm-value" style="font-size:0.7rem;">${typeof s.top_brokers === 'string' ? s.top_brokers.split(',').slice(0,3).join(', ') : '-'}</div>
+          <div class="dm-label">Exit Score</div><div class="dm-value" style="color:${s.exit_score < 20 ? 'var(--success-light)' : s.exit_score < 35 ? 'var(--warning-light)' : 'var(--danger-light)'};">${s.exit_score.toFixed(1)}</div>
+          <div class="dm-label">近期漲停</div><div class="dm-value">${s.recent_limit_ups || 0} 次</div>
+        </div>
+        ${s.ai_report && s.ai_report !== '無報告' ? `<div class="detail-ai">${esc(s.ai_report)}</div>` : ''}
+        <div class="detail-links">
+          <a href="https://tw.stock.yahoo.com/quote/${s.stock_id}" target="_blank" class="detail-link dl-yahoo" onclick="event.stopPropagation();">📊 Yahoo 股市</a>
+          <a href="https://tw.stock.yahoo.com/quote/${s.stock_id}/technical-analysis" target="_blank" class="detail-link dl-yahoo" onclick="event.stopPropagation();">📈 K 線圖</a>
+          <a href="https://www.wantgoo.com/stock/${s.stock_id}" target="_blank" class="detail-link dl-wantgoo" onclick="event.stopPropagation();">🔍 玩股網</a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  el.classList.add('open');
+}
+
+/* ================================================================
+   TIER SUMMARY (sidebar)
+   ================================================================ */
+function renderTierSummary() {
+  const counts = { STRONG_BUY: 0, BUY: 0, WATCH: 0, AVOID: 0 };
+  STATE.filtered.forEach(s => { counts[getTier(s._score)]++; });
+
+  document.getElementById('tierSummary').innerHTML = Object.entries(TIER_CONFIG).map(([key, cfg]) => `
+    <div class="tier-row">
+      <div class="tier-dot" style="background:${cfg.color};"></div>
+      <div class="tier-row-label">${cfg.label} (>= ${cfg.min})</div>
+      <div class="tier-row-count">${counts[key]}</div>
+    </div>
+  `).join('');
+}
+
+/* ================================================================
+   STAGE DONUT CHART
+   ================================================================ */
+function renderStageChart() {
+  const groups = {};
+  STATE.filtered.forEach(s => {
+    const g = s._stageGroup;
+    groups[g] = (groups[g] || 0) + 1;
+  });
+
+  const labels = Object.keys(groups);
+  const values = Object.values(groups);
+  const colors = labels.map(l => {
+    if (l.includes('拉抬')) return 'rgba(16,185,129,0.8)';
+    if (l.includes('吸籌')) return 'rgba(59,130,246,0.8)';
+    if (l.includes('洗盤')) return 'rgba(245,158,11,0.8)';
+    if (l.includes('出貨')) return 'rgba(239,68,68,0.8)';
+    return 'rgba(148,163,184,0.6)';
+  });
+
+  if (STATE.stageChart) STATE.stageChart.destroy();
+
+  STATE.stageChart = new Chart(document.getElementById('stageChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors, borderColor: 'transparent', borderWidth: 0, hoverOffset: 6 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 12 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(10,14,39,0.95)', titleColor: '#e2e8f0', bodyColor: '#94a3b8',
+          borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1,
+          titleFont: { family: 'Inter', weight: '600' }, bodyFont: { family: 'Inter' }, padding: 10,
+        },
+      },
+    },
+  });
+}
+
+/* ================================================================
+   QUADRANT SCATTER CHART
+   ================================================================ */
+function renderQuadrantChart() {
+  const stocks = STATE.filtered;
+
+  const tierColors = {
+    STRONG_BUY: 'rgba(16,185,129,0.85)',
+    BUY: 'rgba(59,130,246,0.85)',
+    WATCH: 'rgba(245,158,11,0.85)',
+    AVOID: 'rgba(239,68,68,0.85)',
+  };
+
+  const tiers = ['STRONG_BUY', 'BUY', 'WATCH', 'AVOID'];
+
+  const datasets = tiers.map(t => ({
+    label: TIER_CONFIG[t].label,
+    data: stocks.filter(s => getTier(s._score) === t).map(s => ({
+      x: s.control_score,
+      y: s.exit_score,
+      r: Math.max(4, Math.min(12, s.rally_prob_5d / 8)),
+      label: `${s.stock_id} ${s.name}`,
+      score: s._score.toFixed(1),
+    })),
+    backgroundColor: tierColors[t],
+    borderColor: 'transparent',
+    hoverBorderColor: '#fff',
+    hoverBorderWidth: 2,
+  }));
+
+  if (STATE.quadrantChart) STATE.quadrantChart.destroy();
+
+  STATE.quadrantChart = new Chart(document.getElementById('quadrantChart').getContext('2d'), {
+    type: 'bubble',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#94a3b8', font: { family: 'Inter', size: 10 }, usePointStyle: true, pointStyle: 'circle', padding: 8 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(10,14,39,0.95)', titleColor: '#e2e8f0', bodyColor: '#94a3b8',
+          borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1,
+          titleFont: { family: 'Inter', weight: '600' }, bodyFont: { family: 'Inter' }, padding: 10,
+          callbacks: {
+            label: ctx => `${ctx.raw.label} | CS:${ctx.raw.x} ES:${ctx.raw.y} | Score:${ctx.raw.score}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Control Score (高=強)', color: '#64748b', font: { family: 'Inter', size: 10 } },
+          grid: { color: 'rgba(99,102,241,0.06)' },
+          ticks: { color: '#64748b', font: { family: 'Inter', size: 9 } },
+          min: 40, max: 100,
+        },
+        y: {
+          title: { display: true, text: 'Exit Score (低=安全)', color: '#64748b', font: { family: 'Inter', size: 10 } },
+          grid: { color: 'rgba(99,102,241,0.06)' },
+          ticks: { color: '#64748b', font: { family: 'Inter', size: 9 } },
+          min: 0, max: 100,
+        },
+      },
+    },
+  });
+}
+
+/* ================================================================
+   EVENT BINDING
+   ================================================================ */
+function bindEvents() {
+  /* Stage pills */
+  document.querySelectorAll('#stageFilter .pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#stageFilter .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE.filterStage = btn.dataset.val;
+      applyFilters();
+    });
+  });
+
+  /* Rec pills */
+  document.querySelectorAll('#recFilter .pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#recFilter .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE.filterRec = btn.dataset.val;
+      applyFilters();
+    });
+  });
+
+  /* Cat select */
+  document.getElementById('catFilter').addEventListener('change', e => {
+    STATE.filterCat = e.target.value;
+    applyFilters();
+  });
+}
+
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function esc(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ================================================================
+   BOOTSTRAP
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
