@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>宇宙魔方 V17 決策儀表板</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* --------------------------------------------------
+       系統設計變數 (Design Tokens)
+       -------------------------------------------------- */
+    :root {
+      --bg-base: #0a0b10;
+      --bg-surface: rgba(20, 24, 38, 0.65);
+      --bg-surface-hover: rgba(30, 36, 56, 0.8);
+      --bg-card-active: rgba(40, 48, 75, 0.9);
+      
+      --color-primary: #6366f1;
+      --color-primary-glow: rgba(99, 102, 241, 0.25);
+      --color-success: #10b981;
+      --color-success-glow: rgba(16, 185, 129, 0.2);
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dark: #64748b;
+      
+      --border-light: rgba(255, 255, 255, 0.05);
+      --border-active: rgba(99, 102, 241, 0.4);
+      
+      --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.15);
+      
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* --------------------------------------------------
+       系統設計變數 (Design Tokens) - Light Mode
+       -------------------------------------------------- */
+    :root[data-theme="light"] {
+      --bg-base: #f8fafc;
+      --bg-surface: rgba(255, 255, 255, 0.8);
+      --bg-surface-hover: rgba(241, 245, 249, 0.9);
+      --bg-card-active: rgba(226, 232, 240, 0.95);
+      
+      --color-primary: #4f46e5;
+      --color-primary-glow: rgba(79, 70, 229, 0.12);
+      --color-success: #059669;
+      --color-success-glow: rgba(5, 150, 105, 0.1);
+      --color-warning: #d97706;
+      --color-danger: #dc2626;
+      
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dark: #94a3b8;
+      
+      --border-light: rgba(99, 102, 241, 0.12);
+      --border-active: rgba(99, 102, 241, 0.4);
+      
+      --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+      --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.08);
+    }
+
+    :root[data-theme="light"] body::before {
+      background: 
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+    }
+
+    /* --------------------------------------------------
+       導覽按鈕 & 主題切換器
+       -------------------------------------------------- */
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-main);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+    }
+    .btn-nav:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 12px var(--color-primary-glow);
+      transform: translateY(-1px);
+    }
+
+    .theme-switch-wrapper {
+      display: inline-flex;
+      align-items: center;
+    }
+    .theme-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+      margin: 0;
+    }
+    .theme-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .theme-switch .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1e1b4b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      border-radius: 30px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    }
+    .theme-switch .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #f8fafc;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    :root[data-theme="light"] .theme-switch .slider {
+      background-color: #bae6fd;
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    :root[data-theme="light"] .theme-switch .slider:before {
+      transform: translateX(24px);
+      background-color: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+    .theme-switch:hover .slider {
+      border-color: var(--color-primary);
+    }
+
+    /* --------------------------------------------------
+       基礎樣式與背景微光
+       -------------------------------------------------- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+      padding: 32px 16px;
+    }
+
+    /* 半透明背景發光 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
+      background: 
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* --------------------------------------------------
+       頂部大盤狀態欄
+       -------------------------------------------------- */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 28px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 0.875rem;
+    }
+
+    .regime-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .regime-badge.bull {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: var(--color-success);
+    }
+
+    .regime-badge.bear {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.25);
+      color: var(--color-danger);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .update-time {
+      color: var(--text-muted);
+    }
+
+    /* --------------------------------------------------
+       精選個股 (Elite Picks)
+       -------------------------------------------------- */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .elite-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .elite-card {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, var(--bg-surface) 100%);
+      border: 1px solid var(--border-active);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-glow), var(--shadow-soft);
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .elite-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+      background: var(--color-primary);
+    }
+
+    .elite-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(99, 102, 241, 0.25);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .stock-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stock-id {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      letter-spacing: 0.5px;
+    }
+
+    .stock-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .qty-badge {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .card-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .metric-value {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .metric-value.highlight {
+      color: var(--color-success);
+    }
+
+    /* --------------------------------------------------
+       分頁標籤與清單列表
+       -------------------------------------------------- */
+    .tabs-wrapper {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid var(--border-light);
+      background: rgba(10, 11, 16, 0.4);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      width: 60%;
+      height: 2px;
+      background-color: var(--color-primary);
+      box-shadow: 0 0 8px var(--color-primary);
+    }
+
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+    }
+
+    .list-item {
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 20px;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item:hover {
+      background: var(--bg-surface-hover);
+    }
+
+    .item-summary {
+      display: grid;
+      grid-template-columns: 100px 140px 100px 100px 100px 120px 1fr;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stock-id-cell {
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .stock-name-cell {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text-main);
+    }
+
+    .tags-container {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tag-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+
+    .tag-badge.turnaround {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.2);
+      color: var(--color-success);
+    }
+
+    .tag-badge.anomaly {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+    }
+
+    .tag-badge.resonance {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.2);
+      color: var(--color-warning);
+    }
+
+    /* 天氣狀態圖示 */
+    .weather-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .weather-icon {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .weather-icon.sunny {
+      stroke: var(--color-warning);
+    }
+
+    .weather-icon.cloudy {
+      stroke: var(--text-dark);
+    }
+
+    /* 上漲進度條 */
+    .potential-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      max-width: 140px;
+    }
+
+    .potential-bar-bg {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .potential-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-success) 100%);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.8s ease-out;
+    }
+
+    .potential-text {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .potential-pct {
+      color: var(--color-success);
+    }
+
+    /* 點擊展開詳情區 */
+    .item-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      background: var(--bg-base);
+      margin-top: 0;
+      border-radius: var(--radius-sm);
+    }
+
+    .list-item.active {
+      background: var(--bg-card-active);
+      border-left: 3px solid var(--color-primary);
+    }
+
+    .list-item.active .item-details {
+      max-height: 200px;
+      margin-top: 12px;
+      border: 1px solid var(--border-light);
+    }
+
+    .details-content {
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      font-size: 0.85rem;
+    }
+
+    .details-column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .leaders-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .leader-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-light);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+    }
+
+    /* --------------------------------------------------
+       AI 戰報區折疊面板
+       -------------------------------------------------- */
+    .ai-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .ai-header {
+      padding: 20px 24px;
+      background: rgba(99, 102, 241, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition-smooth);
+    }
+
+    .ai-header:hover {
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .ai-title {
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ai-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ai-panel.expanded .ai-body {
+      max-height: 800px;
+    }
+
+    .ai-content {
+      padding: 24px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    .ai-content h3 {
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+      color: #a5b4fc;
+      border-left: 3px solid var(--color-primary);
+      padding-left: 8px;
+    }
+
+    .ai-content p {
+      margin-bottom: 16px;
+    }
+    
+    .ai-content ol, .ai-content ul {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    
+    .ai-content li {
+      margin-bottom: 8px;
+    }
+
+    /* Chevron Icon */
+    .chevron-icon {
+      width: 20px;
+      height: 20px;
+      stroke: var(--text-muted);
+      fill: none;
+      stroke-width: 2;
+      transition: transform 0.3s ease;
+    }
+
+    .ai-panel.expanded .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    /* 空狀態提示 */
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-light);
+      border-radius: var(--radius-md);
+    }
+
+    /* --------------------------------------------------
+       響應式斷點
+       -------------------------------------------------- */
+    @media (max-width: 768px) {
+      .item-summary {
+        grid-template-columns: 80px 100px 1fr;
+        gap: 12px;
+      }
+      .item-summary > *:nth-child(n+4):nth-child(-n+6) {
+        display: none; /* 在手機上隱藏部分次要數值 */
+      }
+      .details-content {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- 頂部狀態欄 -->
+    <header class="top-bar">
+      <div class="brand-title">COSMIC CUBE V17</div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="system-status">
+          <div id="regime-badge" class="regime-badge">
+            <span class="status-dot"></span>
+            <span id="regime-text">讀取中...</span>
+          </div>
+          <div class="update-time">更新時間: <span id="update-time-text">-</span></div>
+        </div>
+        <a href="../dashboard.html" class="btn-nav">📊 控盤掃描</a>
+        <!-- Theme Toggle Slider -->
+        <div class="theme-switch-wrapper" title="深淺色模式切換">
+          <label class="theme-switch">
+            <input type="checkbox" id="themeCheckbox" onchange="handleThemeSwitch(this)">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <!-- 精選個股區域 -->
+    <section>
+      <h2 class="section-title">精選警報個股</h2>
+      <div id="elite-picks-wrapper" class="elite-container">
+        <!-- 動態渲染 -->
+      </div>
+    </section>
+
+    <!-- AI 戰報策略解讀 -->
+    <section class="ai-panel" id="ai-panel">
+      <div class="ai-header" onclick="toggleAIPanel()">
+        <div class="ai-title">
+          <span>AI 決策戰術報告</span>
+        </div>
+        <svg class="chevron-icon" viewBox="0 0 24 24">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <div class="ai-body">
+        <div class="ai-content" id="ai-report-content">
+          <!-- 戰報內容 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 三軍部隊清單分頁 -->
+    <section class="tabs-wrapper">
+      <nav class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('picks_rocket')">帝王飆股</button>
+        <button class="tab-btn" onclick="switchTab('picks_ind')">產業龍頭</button>
+        <button class="tab-btn" onclick="switchTab('picks_fin')">金融長城</button>
+      </nav>
+      
+      <div id="stock-list-wrapper" class="list-container">
+        <!-- 清單動態渲染 -->
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    let globalData = null;
+    let currentCategory = 'picks_rocket';
+
+    // 格式化 markdown 的簡單函數，避免載入外部函式庫
+    function parseMarkdown(text) {
+      if (!text) return '';
+      let html = text;
+      // 標題轉換
+      html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+      // 粗體轉換
+      html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+      // 條列轉換
+      html = html.replace(/^\s*\n\* (.*)/gim, '<ul>\n<li>$1</li>\n</ul>');
+      html = html.replace(/^\s*\n[0-9]+\. (.*)/gim, '<ol>\n<li>$1</li>\n</ol>');
+      // 段落換行
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    async function loadData() {
+      try {
+        const response = await fetch('cosmic_cube_data.json?t=' + Date.now());
+        globalData = await response.json();
+        renderDashboard();
+      } catch (error) {
+        console.error('無法載入資料:', error);
+        document.getElementById('stock-list-wrapper').innerHTML = 
+          `<div class="empty-state">資料載入失敗，請確認同目錄下是否存在 cosmic_cube_data.json</div>`;
+      }
+    }
+
+    function renderDashboard() {
+      if (!globalData) return;
+
+      // 1. 更新頂部狀態
+      const regimeBadge = document.getElementById('regime-badge');
+      const regimeText = document.getElementById('regime-text');
+      const updateTime = document.getElementById('update-time-text');
+
+      regimeText.textContent = globalData.regime;
+      updateTime.textContent = globalData.update_time;
+
+      if (globalData.regime && (globalData.regime.includes('多') || globalData.regime.includes('bull'))) {
+        regimeBadge.className = 'regime-badge bull';
+      } else {
+        regimeBadge.className = 'regime-badge bear';
+      }
+
+      // 2. 渲染精選警報
+      renderElitePicks();
+
+      // 3. 渲染當前分頁列表
+      renderCategoryList();
+
+      // 4. 渲染 AI 戰報
+      const aiReportDiv = document.getElementById('ai-report-content');
+      if (globalData.ai_analysis) {
+        aiReportDiv.innerHTML = parseMarkdown(globalData.ai_analysis);
+        document.getElementById('ai-panel').classList.add('expanded');
+      } else {
+        aiReportDiv.innerHTML = '<p>今日無 AI 戰略報告。</p>';
+      }
+    }
+
+    function renderElitePicks() {
+      const wrapper = document.getElementById('elite-picks-wrapper');
+      wrapper.innerHTML = '';
+
+      if (!globalData.elite_picks || globalData.elite_picks.length === 0) {
+        wrapper.innerHTML = `<div style="grid-column: 1/-1;" class="empty-state">今日無精選個股訊號</div>`;
+        return;
+      }
+
+      globalData.elite_picks.forEach(stock => {
+        const costVal = parseFloat(stock.cost_short).toFixed(1);
+        const profitRate = parseFloat(stock.profit_rate).toFixed(1);
+        const purityPct = Math.round(stock.chip_purity * 100);
+        
+        const card = document.createElement('div');
+        card.className = 'elite-card';
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="stock-info">
+              <span class="stock-id">${stock.stock_id}</span>
+              <span class="stock-name">${stock.stock_name || '個股'}</span>
+            </div>
+            <span class="qty-badge">建議: ${stock.safe_qty} 張</span>
+          </div>
+          <div class="card-body">
+            <div class="metric">
+              <span class="metric-label">Hurst 趨勢值</span>
+              <span class="metric-value">${parseFloat(stock.hurst).toFixed(4)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">籌碼純度</span>
+              <span class="metric-value">${purityPct}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">進場成本</span>
+              <span class="metric-value">${costVal}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">今日獲利</span>
+              <span class="metric-value ${profitRate >= 0 ? 'highlight' : ''}">${profitRate}%</span>
+            </div>
+          </div>
+        `;
+        wrapper.appendChild(card);
+      });
+    }
+
+    function renderCategoryList() {
+      const wrapper = document.getElementById('stock-list-wrapper');
+      wrapper.innerHTML = '';
+
+      const list = globalData[currentCategory];
+      if (!list || list.length === 0) {
+        wrapper.innerHTML = `<div class="empty-state">此類別無資料</div>`;
+        return;
+      }
+
+      list.forEach((stock, index) => {
+        const costVal = parseFloat(stock.cost_short).toFixed(1);
+        const profitRate = parseFloat(stock.profit_rate).toFixed(1);
+        const targetVal = parseFloat(stock.nash_target).toFixed(1);
+        const upsideVal = parseFloat(stock.upside_potential).toFixed(1);
+        const currentPrice = parseFloat(stock.current_price || costVal).toFixed(1);
+        
+        // 壓力比率天氣圖示與文字
+        const pressureVal = parseFloat(stock.pressure_ratio || 0);
+        const weatherIcon = pressureVal < 0.3 
+          ? `<svg class="weather-icon sunny" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg><span>晴空</span>`
+          : `<svg class="weather-icon cloudy" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg><span>烏雲(${Math.round(pressureVal * 100)}%)</span>`;
+
+        // 訊號標籤
+        let tagsHtml = '';
+        if (stock.is_turnaround) tagsHtml += `<span class="tag-badge turnaround">翻紅重倉</span>`;
+        if (stock.anomaly_score === -1) tagsHtml += `<span class="tag-badge anomaly">神之手</span>`;
+        if (stock.resonance && stock.resonance > 2) tagsHtml += `<span class="tag-badge resonance">共振(${stock.resonance})</span>`;
+        if (stock.hurst > 0.6) tagsHtml += `<span class="tag-badge" style="border-color:var(--color-primary);color:#a5b4fc">噴射</span>`;
+
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.id = `item-${currentCategory}-${index}`;
+        item.onclick = (e) => {
+          // 如果點擊在展開內容中，不觸發關閉
+          if (e.target.closest('.item-details')) return;
+          toggleItemDetails(currentCategory, index);
+        };
+
+        // 限制上漲空間進度條寬度在 0 到 100% 之間
+        const progressPct = Math.max(0, Math.min(100, parseFloat(upsideVal)));
+
+        item.innerHTML = `
+          <div class="item-summary">
+            <div class="stock-id-cell">${stock.stock_id}</div>
+            <div class="stock-name-cell">${stock.stock_name || '個股'}</div>
+            <div class="tags-container">${tagsHtml || '-'}</div>
+            <div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">現價/成本</div>
+              <div style="font-weight:600">${currentPrice} / ${costVal}</div>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">獲利率</div>
+              <div style="font-weight:600" class="${profitRate >= 0 ? 'highlight' : ''}">${profitRate}%</div>
+            </div>
+            <div class="weather-indicator">${weatherIcon}</div>
+            <div class="potential-wrapper">
+              <div class="potential-text">
+                <span>目標: ${targetVal}</span>
+                <span class="potential-pct">+${upsideVal}%</span>
+              </div>
+              <div class="potential-bar-bg">
+                <div class="potential-bar-fill" style="width: ${progressPct}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="item-details">
+            <div class="details-content">
+              <div class="details-column">
+                <p><span style="color:var(--text-muted)">Hurst 指標值:</span> ${parseFloat(stock.hurst).toFixed(4)}</p>
+                <p><span style="color:var(--text-muted)">籌碼純度:</span> ${Math.round(stock.chip_purity * 100)}%</p>
+                <p><span style="color:var(--text-muted)">建議安全量:</span> ${stock.safe_qty} 張</p>
+              </div>
+              <div class="details-column">
+                <span style="color:var(--text-muted)">主要控盤領頭羊券商:</span>
+                <div class="leaders-list">
+                  ${(stock.leaders || []).map(l => `<span class="leader-chip">${l}</span>`).join('') || '無資料'}
+                </div>
+                <p style="margin-top: 10px;">
+                  <span style="color:var(--text-muted)">庫存增減:</span> 
+                  ${stock.inventory_diff > 0 ? '+' : ''}${stock.inventory_diff} 張 
+                  (累計買超: ${stock.cumulative_buy} 張)
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+        wrapper.appendChild(item);
+      });
+    }
+
+    function switchTab(category) {
+      currentCategory = category;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick').includes(category)) {
+          btn.classList.add('active');
+        }
+      });
+      renderCategoryList();
+    }
+
+    function toggleItemDetails(category, index) {
+      const itemId = `item-${category}-${index}`;
+      const itemElement = document.getElementById(itemId);
+      const isActive = itemElement.classList.contains('active');
+      
+      // 關閉所有其他的 details
+      document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+      
+      if (!isActive) {
+        itemElement.classList.add('active');
+      }
+    }
+
+    function toggleAIPanel() {
+      const panel = document.getElementById('ai-panel');
+      panel.classList.toggle('expanded');
+    }
+
+    function handleThemeSwitch(cb) {
+      try {
+        const newTheme = cb.checked ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+      } catch(e) {}
+    }
+
+    // Initialize theme from local storage
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.addEventListener('DOMContentLoaded', () => {
+          const checkbox = document.getElementById('themeCheckbox');
+          if (checkbox) {
+            checkbox.checked = (savedTheme === 'light');
+          }
+        });
+      } catch(e) {}
+    })();
+
+    window.onload = loadData;
+  </script>
+</body>
+</html>
