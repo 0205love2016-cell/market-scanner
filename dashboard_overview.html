@@ -61,6 +61,45 @@
   --transition-normal: 250ms var(--ease-out);
 }
 
+[data-theme="light"] {
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #e2e8f0;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: rgba(255, 255, 255, 1);
+  --bg-surface: rgba(255, 255, 255, 0.8);
+  --bg-expanded: rgba(248, 250, 252, 0.95);
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-bright: #0f172a;
+
+  --border-subtle: rgba(99, 102, 241, 0.15);
+  --border-medium: rgba(99, 102, 241, 0.3);
+  --border-strong: rgba(99, 102, 241, 0.5);
+
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(99, 102, 241, 0.2);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+/* Light Mode specific body background */
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 30%, rgba(99, 102, 241, 0.1) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 80% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+}
+[data-theme="light"] body::after {
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+}
+
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 14px; scroll-behavior: smooth; }
 
@@ -605,6 +644,9 @@ body::after {
         </div>
       </div>
       <div class="hdr-actions">
+      <button id="themeToggleBtn" class="btn-nav" onclick="toggleTheme()" title="切換黑白模式">
+        🌓 切換模式
+      </button>
         <a href="dashboard.html" class="btn-nav">📋 詳細表格版</a>
       </div>
     </header>
@@ -1265,5 +1307,24 @@ function esc(str) {
    ================================================================ */
 document.addEventListener('DOMContentLoaded', loadData);
 </script>
+
+<script>
+  // Theme Toggle Logic
+  function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  }
+  
+  // Initialize theme from local storage
+  (function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  })();
+</script>
+
 </body>
 </html>
