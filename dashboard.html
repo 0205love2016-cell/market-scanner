@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全市場控盤掃描儀表板</title>
+<meta name="description" content="台股全市場控盤掃描分析儀表板，即時監控主力籌碼動態與控盤模式。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   DESIGN SYSTEM
+   ============================================================ */
+:root {
+  /* Core palette */
+  --bg-primary: #0a0e27;
+  --bg-secondary: #0f1435;
+  --bg-card: rgba(15, 20, 53, 0.75);
+  --bg-card-hover: rgba(25, 32, 72, 0.85);
+  --bg-surface: rgba(20, 25, 60, 0.6);
+  --bg-expanded: rgba(12, 16, 42, 0.92);
+
+  /* Accent colors */
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --primary-glow: rgba(99, 102, 241, 0.25);
+  --success: #10b981;
+  --success-light: #34d399;
+  --success-dark: #059669;
+  --warning: #f59e0b;
+  --warning-light: #fbbf24;
+  --warning-dark: #d97706;
+  --danger: #ef4444;
+  --danger-light: #f87171;
+  --danger-dark: #dc2626;
+  --info: #3b82f6;
+  --info-light: #60a5fa;
+
+  /* Text */
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-bright: #f8fafc;
+
+  /* Borders */
+  --border-subtle: rgba(99, 102, 241, 0.12);
+  --border-medium: rgba(99, 102, 241, 0.25);
+  --border-strong: rgba(99, 102, 241, 0.4);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(15, 20, 53, 0.65);
+  --glass-border: rgba(99, 102, 241, 0.15);
+  --glass-blur: 20px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+  /* Spacing */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 32px;
+  --gap-2xl: 48px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-normal: 250ms var(--ease-out);
+  --transition-slow: 400ms var(--ease-out);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 30%, rgba(99, 102, 241, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 80% 70%, rgba(16, 185, 129, 0.04) 0%, transparent 70%),
+    linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.02) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Subtle grid overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--gap-lg);
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-md);
+  padding: var(--gap-lg) var(--gap-xl);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  margin-bottom: var(--gap-xl);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+.header-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: white;
+}
+
+.header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-bright), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.header-stats {
+  display: flex;
+  gap: var(--gap-lg);
+  flex-wrap: wrap;
+}
+
+.header-stat {
+  text-align: center;
+  padding: 0 var(--gap-md);
+  border-left: 1px solid var(--border-subtle);
+}
+
+.header-stat:first-child {
+  border-left: none;
+}
+
+.header-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.header-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================================
+   SUMMARY CARDS
+   ============================================================ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap-lg);
+  margin-bottom: var(--gap-xl);
+}
+
+.summary-card {
+  position: relative;
+  padding: var(--gap-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.summary-card.card-rally::before { background: linear-gradient(90deg, var(--success), var(--success-light)); }
+.summary-card.card-accum::before { background: linear-gradient(90deg, var(--info), var(--info-light)); }
+.summary-card.card-alert::before { background: linear-gradient(90deg, var(--danger), var(--danger-light)); }
+.summary-card.card-score::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--gap-md);
+}
+
+.card-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.card-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.card-rally .card-icon-wrap { background: rgba(16, 185, 129, 0.12); }
+.card-accum .card-icon-wrap { background: rgba(59, 130, 246, 0.12); }
+.card-alert .card-icon-wrap { background: rgba(239, 68, 68, 0.12); }
+.card-score .card-icon-wrap { background: rgba(99, 102, 241, 0.12); }
+
+.card-icon-wrap svg {
+  width: 20px;
+  height: 20px;
+}
+
+.card-rally .card-icon-wrap svg { fill: var(--success); }
+.card-accum .card-icon-wrap svg { fill: var(--info); }
+.card-alert .card-icon-wrap svg { fill: var(--danger); }
+.card-score .card-icon-wrap svg { fill: var(--primary); }
+
+/* Pulse animation for rally card */
+.card-rally .card-icon-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--success);
+  opacity: 0;
+  animation: iconPulse 2s ease-out infinite;
+}
+
+@keyframes iconPulse {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+.card-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.card-rally .card-value { color: var(--success-light); }
+.card-accum .card-value { color: var(--info-light); }
+.card-alert .card-value { color: var(--danger-light); }
+.card-score .card-value { color: var(--primary-light); }
+
+.card-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: var(--gap-xs);
+}
+
+/* Background decoration */
+.summary-card .card-bg-decoration {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  opacity: 0.04;
+}
+
+.card-rally .card-bg-decoration { background: var(--success); }
+.card-accum .card-bg-decoration { background: var(--info); }
+.card-alert .card-bg-decoration { background: var(--danger); }
+.card-score .card-bg-decoration { background: var(--primary); }
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+.filters-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-lg);
+  margin-bottom: var(--gap-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.filters-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--gap-md);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--gap-md);
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.filter-value-display {
+  font-size: 0.7rem;
+  color: var(--primary-light);
+  font-weight: 600;
+  float: right;
+}
+
+/* Input styles */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+  cursor: pointer;
+  border: none;
+}
+
+select, .search-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  cursor: pointer;
+}
+
+select:focus, .search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.search-input {
+  cursor: text;
+}
+
+.btn-reset {
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-reset:hover {
+  background: var(--primary-glow);
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+.table-container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: var(--gap-xl);
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gap-md) var(--gap-lg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.table-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.table-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(10, 14, 39, 0.95);
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+thead th:hover {
+  color: var(--primary-light);
+}
+
+thead th.sort-asc::after,
+thead th.sort-desc::after {
+  margin-left: 4px;
+  color: var(--primary-light);
+}
+
+thead th.sort-asc::after { content: ' \25B2'; }
+thead th.sort-desc::after { content: ' \25BC'; }
+
+tbody tr {
+  border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+tbody tr.row-expanded {
+  background: var(--bg-card-hover);
+  border-bottom-color: transparent;
+}
+
+/* Action Buttons */
+.action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+}
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.ai-btn {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary-light);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.ai-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+.yahoo-btn {
+  background: rgba(113, 11, 234, 0.1);
+  color: #c48dfc;
+  border-color: rgba(113, 11, 234, 0.2);
+}
+.yahoo-btn:hover {
+  background: rgba(113, 11, 234, 0.2);
+  color: #fff;
+  border-color: rgba(113, 11, 234, 0.4);
+}
+
+tbody td {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+/* Stock name cell */
+.stock-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stock-id {
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.stock-link {
+  font-weight: 700;
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.stock-link:hover {
+  color: var(--text-bright);
+  text-decoration: underline;
+}
+
+.stock-name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Change percent */
+.change-positive { color: var(--danger-light); }
+.change-negative { color: var(--success-light); }
+.change-zero { color: var(--text-muted); }
+
+/* Score bar */
+.score-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.score-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--transition-slow);
+}
+
+.score-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Control score colors */
+.cs-low { background: linear-gradient(90deg, var(--danger), var(--danger-light)); }
+.cs-mid { background: linear-gradient(90deg, var(--warning), var(--warning-light)); }
+.cs-high { background: linear-gradient(90deg, var(--success), var(--success-light)); }
+
+/* Exit score colors (inverted) */
+.es-low { background: linear-gradient(90deg, var(--success), var(--success-light)); }
+.es-mid { background: linear-gradient(90deg, var(--warning), var(--warning-light)); }
+.es-high { background: linear-gradient(90deg, var(--danger), var(--danger-light)); }
+
+/* Rally prob */
+.rally-high { color: var(--success-light); font-weight: 600; }
+.rally-mid { color: var(--warning-light); font-weight: 600; }
+.rally-low { color: var(--danger-light); font-weight: 600; }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-rally {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success-light);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-accum {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--info-light);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-wash {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning-light);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-dist {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger-light);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-hold {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success-light);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-watch {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning-light);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-sell {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger-light);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-pattern {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary-light);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  margin: 2px;
+}
+
+.badge-signal {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning-light);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  margin: 2px;
+}
+
+/* Alert dot */
+.alert-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.alert-active {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: alertPulse 1.5s ease-in-out infinite;
+}
+
+.alert-inactive {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(239, 68, 68, 0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 12px rgba(239, 68, 68, 0.8); }
+}
+
+/* ============================================================
+   DETAIL PANEL (Expanded Row)
+   ============================================================ */
+.detail-row td {
+  padding: 0;
+}
+
+.detail-panel {
+  background: var(--bg-expanded);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 2px solid var(--primary-glow);
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.5s var(--ease-out), opacity 0.3s var(--ease-out), padding 0.3s var(--ease-out);
+  padding: 0 var(--gap-xl);
+}
+
+.detail-panel.open {
+  max-height: 800px;
+  opacity: 1;
+  padding: var(--gap-xl);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: var(--gap-xl);
+}
+
+.detail-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--gap-md);
+  padding-bottom: var(--gap-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Gauges */
+.gauges-row {
+  display: flex;
+  gap: var(--gap-lg);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-sm);
+}
+
+.gauge {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.gauge-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  z-index: 2;
+}
+
+.gauge-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Brokers table in detail */
+.brokers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.brokers-table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.brokers-table td {
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.05);
+}
+
+.brokers-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* Patterns & Signals */
+.badges-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
+  margin-bottom: var(--gap-md);
+}
+
+/* AI Report */
+.ai-report {
+  margin-top: var(--gap-lg);
+  padding: var(--gap-md);
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  grid-column: 1 / -1;
+}
+
+.ai-report-text {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ============================================================
+   CHARTS SECTION
+   ============================================================ */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-xl);
+  margin-bottom: var(--gap-xl);
+}
+
+.chart-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.chart-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: var(--gap-md);
+}
+
+.chart-wrap {
+  position: relative;
+  height: 320px;
+}
+
+.chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ============================================================
+   LOADING & EMPTY STATES
+   ============================================================ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--gap-md);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: var(--gap-md);
+  padding: var(--gap-xl);
+}
+
+.error-text {
+  font-size: 1rem;
+  color: var(--danger-light);
+  font-weight: 600;
+}
+
+.error-detail {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 500px;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  text-align: center;
+  padding: var(--gap-lg);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1200px) {
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .detail-grid > div:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .header-left {
+    flex-direction: column;
+  }
+  .header-stats {
+    justify-content: center;
+  }
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-container {
+    padding: var(--gap-md);
+  }
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  .header-stat {
+    border-left: none;
+    padding: 0;
+  }
+  .card-value {
+    font-size: 1.8rem;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
+
+/* ============================================================
+   UTILITY: NO RESULTS
+   ============================================================ */
+.no-results {
+  text-align: center;
+  padding: var(--gap-2xl);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* PL coloring */
+.pl-positive { color: var(--danger-light); }
+.pl-negative { color: var(--success-light); }
+
+/* ============================================================
+   ELITE PICKS SECTION
+   ============================================================ */
+.elite-section {
+  margin-bottom: var(--gap-xl);
+}
+
+.elite-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--gap-md);
+  margin-bottom: var(--gap-lg);
+}
+
+.elite-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.elite-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-bright), var(--warning-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.elite-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.btn-toggle-detail {
+  padding: 10px 24px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+}
+
+.btn-toggle-detail:hover {
+  background: var(--primary-glow);
+  border-color: var(--primary);
+  color: var(--text-bright);
+  box-shadow: var(--shadow-glow);
+}
+
+.elite-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap-lg);
+}
+
+.elite-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-lg) var(--gap-lg) var(--gap-lg) calc(var(--gap-lg) + 4px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  color: inherit;
+}
+
+.elite-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-lg), 0 0 30px rgba(99, 102, 241, 0.2);
+  border-color: var(--border-strong);
+}
+
+/* Left border for recommendation */
+.elite-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.elite-card.rec-buy::before { background: linear-gradient(180deg, var(--success), var(--success-light)); }
+.elite-card.rec-hold::before { background: linear-gradient(180deg, var(--info), var(--info-light)); }
+.elite-card.rec-watch::before { background: linear-gradient(180deg, var(--warning), var(--warning-light)); }
+
+/* Rank number */
+.elite-rank {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: rgba(99, 102, 241, 0.08);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.elite-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap-md);
+  margin-bottom: var(--gap-sm);
+}
+
+.elite-stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.elite-stock-id {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-bright);
+  letter-spacing: -0.01em;
+}
+
+.elite-stock-name {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.elite-price-wrap {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.elite-price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.elite-change {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.elite-summary {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #f0c674;
+  margin: var(--gap-sm) 0 var(--gap-md) 0;
+  padding: var(--gap-sm) var(--gap-md);
+  background: rgba(240, 198, 116, 0.06);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid rgba(240, 198, 116, 0.3);
+}
+
+.elite-metrics {
+  display: flex;
+  gap: var(--gap-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--gap-sm);
+}
+
+.elite-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid;
+}
+
+.elite-pill-label {
+  opacity: 0.8;
+}
+
+.elite-pill-value {
+  font-weight: 800;
+}
+
+.pill-green {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success-light);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.pill-yellow {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning-light);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.pill-red {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger-light);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.pill-blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--info-light);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.elite-badges {
+  display: flex;
+  gap: var(--gap-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Detail section toggle */
+.detail-section-wrapper {
+  overflow: hidden;
+  transition: max-height 0.5s var(--ease-out), opacity 0.4s var(--ease-out);
+  max-height: 0;
+  opacity: 0;
+}
+
+.detail-section-wrapper.expanded {
+  max-height: 999999px;
+  opacity: 1;
+}
+
+/* Background decoration for elite cards */
+.elite-card .elite-bg-glow {
+  position: absolute;
+  right: -30px;
+  bottom: -30px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+.elite-card.rec-buy .elite-bg-glow { background: var(--success); }
+.elite-card.rec-hold .elite-bg-glow { background: var(--info); }
+.elite-card.rec-watch .elite-bg-glow { background: var(--warning); }
+
+/* Responsive for elite picks */
+@media (max-width: 900px) {
+  .elite-grid {
+    grid-template-columns: 1fr;
+  }
+  .elite-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .elite-card-top {
+    flex-direction: column;
+    gap: var(--gap-xs);
+  }
+  .elite-price-wrap {
+    text-align: left;
+  }
+  .elite-metrics {
+    flex-direction: column;
+  }
+  .elite-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* AI Modal */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-content {
+  background: var(--bg-card); width: 90%; max-width: 700px;
+  border-radius: 12px; border: 1px solid var(--border-light);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; max-height: 80vh;
+  transform: translateY(20px); transition: transform 0.3s ease;
+}
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.modal-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border-light);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h3 { margin: 0; color: #fff; font-size: 1.2rem; }
+.modal-close {
+  background: none; border: none; color: var(--text-muted); font-size: 1.5rem;
+  cursor: pointer; line-height: 1; padding: 0;
+}
+.modal-close:hover { color: #fff; }
+.modal-body {
+  padding: 20px; overflow-y: auto; color: var(--text-secondary); line-height: 1.6;
+  font-size: 1.05rem; white-space: pre-line;
+}
+</style>
+</head>
+<body>
+<div class="app-container" id="app">
+  <!-- Loading state -->
+  <div class="loading-container" id="loadingState">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">載入掃描資料中...</div>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-container" id="errorState" style="display:none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--danger-light);">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div class="error-text">資料載入失敗</div>
+    <div class="error-detail" id="errorDetail"></div>
+  </div>
+
+  <!-- Main content (hidden until loaded) -->
+  <div id="mainContent" style="display:none;">
+
+    <!-- HEADER -->
+    <header class="header" id="headerBar">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="header-title">
+          <h1>全市場控盤掃描儀表板</h1>
+          <div class="header-date" id="scanDate"></div>
+        </div>
+      </div>
+      <div class="header-stats" id="headerStats"></div>
+      <a href="dashboard_overview.html" style="padding:8px 18px;background:rgba(240,198,116,0.12);border:1px solid rgba(240,198,116,0.3);border-radius:10px;color:#f0c674;font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s ease;white-space:nowrap;" onmouseover="this.style.background='rgba(240,198,116,0.22)';this.style.borderColor='rgba(240,198,116,0.5)'" onmouseout="this.style.background='rgba(240,198,116,0.12)';this.style.borderColor='rgba(240,198,116,0.3)'">🎯 買進優先序</a>
+    </header>
+
+    <!-- ELITE PICKS -->
+    <section class="elite-section" id="eliteSection"></section>
+
+    <!-- DETAIL SECTIONS (togglable) -->
+    <div class="detail-section-wrapper" id="detailSectionWrapper">
+
+    <!-- FILTERS -->
+    <section class="filters-panel">
+      <div class="filters-title">篩選條件</div>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <div class="filter-label">Control Score <span class="filter-value-display" id="csDisplay">0 - 100</span></div>
+          <input type="range" id="filterCS" min="0" max="100" value="0" step="1">
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Exit Score <span class="filter-value-display" id="esDisplay">0 - 100</span></div>
+          <input type="range" id="filterES" min="0" max="100" value="100" step="1">
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Rally Prob 5D <span class="filter-value-display" id="rpDisplay">0%</span></div>
+          <input type="range" id="filterRP" min="0" max="100" value="0" step="1">
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">主力階段</div>
+          <select id="filterStage">
+            <option value="all">全部</option>
+            <option value="拉抬">拉抬</option>
+            <option value="吸籌">吸籌</option>
+            <option value="洗盤">洗盤</option>
+            <option value="出貨">出貨</option>
+            <option value="吸籌/洗盤">吸籌/洗盤</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">建議</div>
+          <select id="filterRec">
+            <option value="all">全部</option>
+            <option value="續抱">續抱</option>
+            <option value="觀望">觀望</option>
+            <option value="不續抱">不續抱</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">類股</div>
+          <select id="filterCategory">
+            <option value="all">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">搜尋</div>
+          <input type="text" class="search-input" id="filterSearch" placeholder="代號或名稱...">
+        </div>
+        <div class="filter-group" style="justify-content:flex-end;">
+          <button class="btn-reset" id="btnReset">重置篩選</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN TABLE -->
+    <section class="table-container">
+      <div class="table-header">
+        <div class="table-title">掃描結果</div>
+        <div class="table-count" id="tableCount"></div>
+      </div>
+      <div class="table-scroll">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th data-sort="stock_id">股票</th>
+              <th data-sort="close">收盤價</th>
+              <th data-sort="change_pct">漲跌%</th>
+              <th data-sort="control_score">Control Score</th>
+              <th data-sort="exit_score">Exit Score</th>
+              <th data-sort="rally_prob_5d">Rally% (5D)</th>
+              <th data-sort="stage">主力階段</th>
+              <th data-sort="main_force_pl_pct">主力獲利%</th>
+              <th data-sort="recommendation">建議</th>
+              <th data-sort="alert">警戒</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CHARTS -->
+    <section class="charts-grid" id="chartsSection">
+      <div class="chart-card">
+        <div class="chart-card-title">Control Score vs Exit Score 分布</div>
+        <div class="chart-wrap">
+          <canvas id="scatterChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Top 20 Control Score 排行</div>
+        <div class="chart-wrap">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    </div><!-- end detail-section-wrapper -->
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      Cosmic Cube v17 - Market Scanner Dashboard | 資料產生時間以 JSON 檔案為準
+    </footer>
+
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+const APP_STATE = {
+  rawData: null,
+  filteredStocks: [],
+  sortColumn: 'control_score',
+  sortDirection: 'desc',
+  expandedRow: null,
+  scatterChart: null,
+  barChart: null,
+};
+
+/* ================================================================
+   CONSTANTS
+   ================================================================ */
+const STAGE_BADGE_MAP = {
+  '拉抬':     'badge-rally',
+  '吸籌':     'badge-accum',
+  '吸籌/洗盤': 'badge-wash',
+  '洗盤':     'badge-wash',
+  '出貨':     'badge-dist',
+};
+
+const REC_BADGE_MAP = {
+  '續抱':   'badge-hold',
+  '觀望':   'badge-watch',
+  '不續抱': 'badge-sell',
+};
+
+const SIGNAL_LABELS = {
+  'vol_spike_no_drop':     '量增不跌',
+  'vol_spike_with_drop':   '量增同跌',
+  'recent_limit_up':       '近期漲停',
+  'ma20_positive':         'MA20 正向',
+  'ma5_cross_down_ma20':   'MA5 下穿 MA20',
+  'institutional_net_buy': '法人淨買',
+  'broker_sell_cluster':   '券商群賣',
+  'breakout_high':         '突破前高',
+  'volume_shrink':         '量能萎縮',
+};
+
+const PATTERN_LABELS = {
+  'vol_up_no_drop':              '量增不跌',
+  'locked_limit_up':             '漲停鎖死',
+  'slow_accumulation':           '緩步吸籌',
+  'volume_dry_up':               '量能乾涸',
+  'distribution_volume':         '出貨量能',
+  'top_reversal':                '頭部反轉',
+  'ascending_triangle_breakout': '上升三角突破',
+  'shakeout_dip':                '洗盤急殺',
+};
+
+/* ================================================================
+   DATA LOADING
+   ================================================================ */
+async function loadData() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateParam = urlParams.get('date');
+    const fileName = dateParam ? `dashboard_data_${dateParam}.json` : 'dashboard_data.json';
+    const cacheBuster = `?t=${Date.now()}`;
+    const response = await fetch(`${fileName}${cacheBuster}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const data = await response.json();
+    APP_STATE.rawData = data;
+    APP_STATE.filteredStocks = [...data.stocks];
+    hideLoading();
+    renderDashboard();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function hideLoading() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+}
+
+function showError(message) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display = 'flex';
+  document.getElementById('errorDetail').textContent =
+    `無法載入 dashboard_data.json。請確認檔案存在且格式正確。錯誤：${message}`;
+}
+
+/* ================================================================
+   RENDER DASHBOARD
+   ================================================================ */
+function renderDashboard() {
+  renderHeader();
+  renderElitePicks();
+  populateCategoryFilter();
+  applyFiltersAndSort();
+  renderCharts();
+  bindEvents();
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+function renderHeader() {
+  const data = APP_STATE.rawData;
+  
+  let optionsHtml = '';
+  if (data.available_dates && data.available_dates.length > 0) {
+    optionsHtml = data.available_dates.map(d => `<option value="${d}">${d}</option>`).join('');
+  } else {
+    optionsHtml = `<option value="${data.scan_date}">${data.scan_date}</option>`;
+  }
+  
+  const currentUrl = new URL(window.location.href);
+  const selectedDate = currentUrl.searchParams.get('date') || data.scan_date;
+  
+  document.getElementById('scanDate').innerHTML = `
+    <span>掃描日期：${data.scan_date}</span>
+    <select id="historySelector" onchange="if(this.value) window.location.href='?date='+this.value" style="margin-left:10px; background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:4px; padding:2px 6px;">
+      <option value="">切換歷史紀錄...</option>
+      ${optionsHtml}
+    </select>
+  `;
+  setTimeout(() => {
+     const sel = document.getElementById('historySelector');
+     if(sel) {
+         // set the dropdown to currently viewed date if it exists
+         Array.from(sel.options).forEach(opt => {
+             if (opt.value === selectedDate) opt.selected = true;
+         });
+     }
+  }, 0);
+
+  const statsData = [
+    { value: data.total_scanned.toLocaleString(), label: '掃描總數' },
+    { value: data.stage1_count, label: 'Stage 1 初篩' },
+    { value: data.stage2_count, label: 'Stage 2 評分' },
+    { value: data.stage3_count, label: 'Stage 3 分析' },
+  ];
+
+  document.getElementById('headerStats').innerHTML = statsData.map(s => `
+    <div class="header-stat">
+      <div class="header-stat-value">${s.value}</div>
+      <div class="header-stat-label">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+/* ================================================================
+   SUMMARY CARDS (Removed)
+   ================================================================ */
+/* ================================================================
+   CATEGORY FILTER
+   ================================================================ */
+function populateCategoryFilter() {
+  const categories = [...new Set(APP_STATE.rawData.stocks.map(s => s.category))].sort();
+  const select = document.getElementById('filterCategory');
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    select.appendChild(opt);
+  });
+}
+
+/* ================================================================
+   FILTERING & SORTING
+   ================================================================ */
+function applyFiltersAndSort() {
+  const csMin = parseInt(document.getElementById('filterCS').value, 10);
+  const esMax = parseInt(document.getElementById('filterES').value, 10);
+  const rpMin = parseInt(document.getElementById('filterRP').value, 10);
+  const stageVal = document.getElementById('filterStage').value;
+  const recVal = document.getElementById('filterRec').value;
+  const catVal = document.getElementById('filterCategory').value;
+  const searchVal = document.getElementById('filterSearch').value.trim().toLowerCase();
+
+  let filtered = APP_STATE.rawData.stocks.filter(s => {
+    if (s.control_score < csMin) return false;
+    if (s.exit_score > esMax) return false;
+    if (s.rally_prob_5d < rpMin) return false;
+    if (stageVal !== 'all' && s.stage !== stageVal) return false;
+    if (recVal !== 'all' && s.recommendation !== recVal) return false;
+    if (catVal !== 'all' && s.category !== catVal) return false;
+    if (searchVal) {
+      const match = s.stock_id.toLowerCase().includes(searchVal) ||
+                    s.name.toLowerCase().includes(searchVal);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  const col = APP_STATE.sortColumn;
+  const dir = APP_STATE.sortDirection === 'asc' ? 1 : -1;
+
+  filtered.sort((a, b) => {
+    let valA = a[col];
+    let valB = b[col];
+
+    if (typeof valA === 'string') {
+      return dir * valA.localeCompare(valB, 'zh-TW');
+    }
+    if (typeof valA === 'boolean') {
+      return dir * ((valA ? 1 : 0) - (valB ? 1 : 0));
+    }
+    return dir * (valA - valB);
+  });
+
+  APP_STATE.filteredStocks = filtered;
+  renderTable();
+}
+
+/* ================================================================
+   TABLE RENDERING
+   ================================================================ */
+function renderTable() {
+  const stocks = APP_STATE.filteredStocks;
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('tableCount').textContent = `${stocks.length} 檔`;
+
+  if (stocks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="no-results">無符合條件的標的</td></tr>';
+    return;
+  }
+
+  let html = '';
+  stocks.forEach((s, idx) => {
+    const changeCls = s.change_pct > 0 ? 'change-positive' : s.change_pct < 0 ? 'change-negative' : 'change-zero';
+    const changePrefix = s.change_pct > 0 ? '+' : '';
+
+    // Control score bar
+    const csCls = s.control_score < 30 ? 'cs-low' : s.control_score < 60 ? 'cs-mid' : 'cs-high';
+    const csColor = s.control_score < 30 ? 'var(--danger-light)' : s.control_score < 60 ? 'var(--warning-light)' : 'var(--success-light)';
+
+    // Exit score bar
+    const esCls = s.exit_score < 20 ? 'es-low' : s.exit_score < 40 ? 'es-mid' : 'es-high';
+    const esColor = s.exit_score < 20 ? 'var(--success-light)' : s.exit_score < 40 ? 'var(--warning-light)' : 'var(--danger-light)';
+
+    // Rally prob
+    const rpCls = s.rally_prob_5d >= 70 ? 'rally-high' : s.rally_prob_5d >= 40 ? 'rally-mid' : 'rally-low';
+
+    // Stage badge
+    const stageBadge = STAGE_BADGE_MAP[s.stage] || 'badge-wash';
+
+    // Recommendation badge
+    const recBadge = REC_BADGE_MAP[s.recommendation] || 'badge-watch';
+
+    // PL color
+    const plCls = s.main_force_pl_pct >= 0 ? 'pl-positive' : 'pl-negative';
+    const plPrefix = s.main_force_pl_pct >= 0 ? '+' : '';
+
+    const isExpanded = APP_STATE.expandedRow === s.stock_id;
+
+    html += `
+      <tr data-stock-id="${s.stock_id}">
+        <td>
+          <div class="stock-cell">
+            <a href="https://tw.stock.yahoo.com/quote/${s.stock_id}" target="_blank" onclick="event.stopPropagation();" class="stock-link" title="Yahoo 股市">${s.stock_id}</a>
+            <span class="stock-name">${s.name}</span>
+          </div>
+        </td>
+        <td>${s.close.toLocaleString()}</td>
+        <td class="${changeCls}">${changePrefix}${s.change_pct.toFixed(2)}%</td>
+        <td>
+          <div class="score-bar-container">
+            <div class="score-bar"><div class="score-bar-fill ${csCls}" style="width:${s.control_score}%"></div></div>
+            <span class="score-value" style="color:${csColor}">${s.control_score.toFixed(1)}</span>
+          </div>
+        </td>
+        <td>
+          <div class="score-bar-container">
+            <div class="score-bar"><div class="score-bar-fill ${esCls}" style="width:${s.exit_score}%"></div></div>
+            <span class="score-value" style="color:${esColor}">${s.exit_score.toFixed(1)}</span>
+          </div>
+        </td>
+        <td class="${rpCls}">${s.rally_prob_5d.toFixed(1)}%</td>
+        <td><span class="badge ${stageBadge}">${s.stage}</span></td>
+        <td class="${plCls}">${plPrefix}${s.main_force_pl_pct.toFixed(2)}%</td>
+        <td><span class="badge ${recBadge}">${s.recommendation}</span></td>
+        <td><span class="alert-dot ${s.alert ? 'alert-active' : 'alert-inactive'}"></span></td>
+      </tr>
+      
+    `;
+  });
+
+  tbody.innerHTML = html;
+
+  // Update sort indicators
+  document.querySelectorAll('#mainTable thead th').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.sort === APP_STATE.sortColumn) {
+      th.classList.add(APP_STATE.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
+/* ================================================================
+   DETAIL PANEL
+   ================================================================ */
+function toggleDetail(stockId) {
+  if (APP_STATE.expandedRow === stockId) {
+    // Collapse
+    const panel = document.getElementById(`panel-${stockId}`);
+    if (panel) panel.classList.remove('open');
+    const row = document.querySelector(`tr[data-stock-id="${stockId}"]`);
+    if (row) row.classList.remove('row-expanded');
+    setTimeout(() => {
+      APP_STATE.expandedRow = null;
+      // Clear content after animation
+      if (panel) panel.innerHTML = '';
+    }, 300);
+  } else {
+    // Collapse previous
+    if (APP_STATE.expandedRow) {
+      const prevPanel = document.getElementById(`panel-${APP_STATE.expandedRow}`);
+      const prevRow = document.querySelector(`tr[data-stock-id="${APP_STATE.expandedRow}"]`);
+      if (prevPanel) {
+        prevPanel.classList.remove('open');
+        setTimeout(() => { prevPanel.innerHTML = ''; }, 300);
+      }
+      if (prevRow) prevRow.classList.remove('row-expanded');
+    }
+
+    // Expand new
+    APP_STATE.expandedRow = stockId;
+    const stock = APP_STATE.rawData.stocks.find(s => s.stock_id === stockId);
+    if (!stock) return;
+
+    const panel = document.getElementById(`panel-${stockId}`);
+    const row = document.querySelector(`tr[data-stock-id="${stockId}"]`);
+    if (panel) {
+      panel.innerHTML = renderDetailContent(stock);
+      requestAnimationFrame(() => {
+        panel.classList.add('open');
+      });
+    }
+    if (row) row.classList.add('row-expanded');
+  }
+}
+
+function renderDetailContent(stock) {
+  // Gauges
+  const gauges = renderGauges(stock);
+
+  // Brokers table
+  const brokers = renderBrokersTable(stock);
+
+  // Patterns & Signals
+  const patternsSignals = renderPatternsSignals(stock);
+
+  // AI Report
+  const aiReport = stock.ai_report
+    ? `<div class="ai-report">
+        <div class="detail-section-title">AI 分析報告</div>
+        <div class="ai-report-text">${escapeHTML(stock.ai_report)}</div>
+       </div>`
+    : '';
+
+  return `
+    <div class="detail-grid">
+      <div>
+        <div class="detail-section-title">核心指標</div>
+        ${gauges}
+      </div>
+      <div>
+        <div class="detail-section-title">主力券商 Top 5</div>
+        ${brokers}
+      </div>
+      <div>
+        ${patternsSignals}
+      </div>
+      ${aiReport}
+    </div>
+  `;
+}
+
+function renderGauges(stock) {
+  const csColor = stock.control_score < 30 ? 'var(--danger)' : stock.control_score < 60 ? 'var(--warning)' : 'var(--success)';
+  const esColor = stock.exit_score < 20 ? 'var(--success)' : stock.exit_score < 40 ? 'var(--warning)' : 'var(--danger)';
+  const rpColor = stock.rally_prob_5d >= 70 ? 'var(--success)' : stock.rally_prob_5d >= 40 ? 'var(--warning)' : 'var(--danger)';
+
+  function makeGauge(value, maxVal, color, label) {
+    const pct = Math.min((value / maxVal) * 100, 100);
+    const deg = (pct / 100) * 360;
+    return `
+      <div class="gauge-container">
+        <div class="gauge" style="background: conic-gradient(${color} 0deg, ${color} ${deg}deg, rgba(255,255,255,0.05) ${deg}deg, rgba(255,255,255,0.05) 360deg);">
+          <div style="position:absolute;inset:6px;border-radius:50%;background:var(--bg-expanded);display:flex;align-items:center;justify-content:center;">
+            <span class="gauge-value" style="color:${color}">${typeof value === 'number' ? value.toFixed(1) : value}</span>
+          </div>
+        </div>
+        <div class="gauge-label">${label}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="gauges-row">
+      ${makeGauge(stock.control_score, 100, csColor, 'Control Score')}
+      ${makeGauge(stock.exit_score, 100, esColor, 'Exit Score')}
+      ${makeGauge(stock.rally_prob_5d, 100, rpColor, 'Rally Prob 5D')}
+    </div>
+    <div style="margin-top:var(--gap-md);display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-sm);font-size:0.78rem;">
+      <div style="color:var(--text-muted)">10D Rally</div><div style="text-align:right;color:var(--text-secondary)">${stock.rally_prob_10d?.toFixed(1) || '-'}%</div>
+      <div style="color:var(--text-muted)">20D Rally</div><div style="text-align:right;color:var(--text-secondary)">${stock.rally_prob_20d?.toFixed(1) || '-'}%</div>
+      <div style="color:var(--text-muted)">30D Rally</div><div style="text-align:right;color:var(--text-secondary)">${stock.rally_prob_30d?.toFixed(1) || '-'}%</div>
+      <div style="color:var(--text-muted)">主力均成本</div><div style="text-align:right;color:var(--text-secondary)">${stock.main_force_cost?.toLocaleString() || '-'}</div>
+      <div style="color:var(--text-muted)">個股分析連結</div>
+      <div style="text-align:right;">
+        <a href="https://tw.stock.yahoo.com/quote/${stock.stock_id}" target="_blank" style="color:var(--primary-light);text-decoration:none;margin-right:8px;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Yahoo</a>
+        <a href="https://www.wantgoo.com/stock/${stock.stock_id}" target="_blank" style="color:var(--primary-light);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">玩股網</a>
+      </div>
+    </div>
+  `;
+}
+
+function renderBrokersTable(stock) {
+  const brokers = stock.top_brokers || [];
+  if (brokers.length === 0) {
+    return '<div class="no-results" style="padding:var(--gap-md)">無券商資料</div>';
+  }
+
+  let rows = brokers.map(b => {
+    const plCls = b.pl >= 0 ? 'pl-positive' : 'pl-negative';
+    const plPrefix = b.pl >= 0 ? '+' : '';
+    const consecText = b.consec_buy > 0 ? `${b.consec_buy} 日` : `${Math.abs(b.consec_buy)} 日`;
+    const consecColor = b.consec_buy > 0 ? 'var(--success-light)' : 'var(--danger-light)';
+    return `
+      <tr>
+        <td style="color:var(--text-primary);font-weight:500">${escapeHTML(b.name)}</td>
+        <td>${b.shares.toLocaleString()}</td>
+        <td>${b.cost.toLocaleString()}</td>
+        <td class="${plCls}">${plPrefix}${b.pl.toLocaleString()}</td>
+        <td style="color:${consecColor}">${consecText}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <table class="brokers-table">
+      <thead>
+        <tr>
+          <th>券商分點</th>
+          <th>張數</th>
+          <th>均成本</th>
+          <th>損益</th>
+          <th>連續買賣</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderPatternsSignals(stock) {
+  const patterns = (stock.patterns || []).map(p =>
+    `<span class="badge badge-pattern">${PATTERN_LABELS[p] || p}</span>`
+  ).join('');
+
+  const signals = (stock.signals || []).map(s =>
+    `<span class="badge badge-signal">${SIGNAL_LABELS[s] || s}</span>`
+  ).join('');
+
+  return `
+    <div class="detail-section-title">控盤模式</div>
+    <div class="badges-wrap">${patterns || '<span style="color:var(--text-muted);font-size:0.8rem">無</span>'}</div>
+    <div class="detail-section-title" style="margin-top:var(--gap-md)">觸發訊號</div>
+    <div class="badges-wrap">${signals || '<span style="color:var(--text-muted);font-size:0.8rem">無</span>'}</div>
+  `;
+}
+
+/* ================================================================
+   CHARTS (Chart.js)
+   ================================================================ */
+function renderCharts() {
+  renderScatterChart();
+  renderBarChart();
+}
+
+function renderScatterChart() {
+  const stocks = APP_STATE.rawData.stocks;
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+
+  const stageColors = {
+    '拉抬':     'rgba(16, 185, 129, 0.8)',
+    '吸籌':     'rgba(59, 130, 246, 0.8)',
+    '吸籌/洗盤': 'rgba(245, 158, 11, 0.8)',
+    '洗盤':     'rgba(245, 158, 11, 0.8)',
+    '出貨':     'rgba(239, 68, 68, 0.8)',
+  };
+
+  const maxVol = Math.max(...stocks.map(s => s.volume));
+
+  const dataPoints = stocks.map(s => ({
+    x: s.control_score,
+    y: s.exit_score,
+    r: Math.max(4, (s.volume / maxVol) * 25),
+    label: `${s.stock_id} ${s.name}`,
+    stage: s.stage,
+  }));
+
+  // Group by stage
+  const stages = [...new Set(stocks.map(s => s.stage))];
+  const datasets = stages.map(stage => ({
+    label: stage,
+    data: dataPoints.filter(d => d.stage === stage),
+    backgroundColor: stageColors[stage] || 'rgba(148, 163, 184, 0.6)',
+    borderColor: 'transparent',
+    borderWidth: 0,
+    hoverBorderColor: '#fff',
+    hoverBorderWidth: 2,
+  }));
+
+  if (APP_STATE.scatterChart) APP_STATE.scatterChart.destroy();
+
+  APP_STATE.scatterChart = new Chart(ctx, {
+    type: 'bubble',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#94a3b8',
+            font: { family: 'Inter', size: 11 },
+            usePointStyle: true,
+            pointStyle: 'circle',
+          },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(10, 14, 39, 0.95)',
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(99, 102, 241, 0.3)',
+          borderWidth: 1,
+          titleFont: { family: 'Inter', weight: '600' },
+          bodyFont: { family: 'Inter' },
+          padding: 12,
+          callbacks: {
+            label: function(context) {
+              const d = context.raw;
+              return `${d.label} | CS: ${d.x} | ES: ${d.y}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Control Score',
+            color: '#64748b',
+            font: { family: 'Inter', size: 12, weight: '500' },
+          },
+          grid: { color: 'rgba(99, 102, 241, 0.06)' },
+          ticks: { color: '#64748b', font: { family: 'Inter' } },
+          min: 0, max: 100,
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Exit Score',
+            color: '#64748b',
+            font: { family: 'Inter', size: 12, weight: '500' },
+          },
+          grid: { color: 'rgba(99, 102, 241, 0.06)' },
+          ticks: { color: '#64748b', font: { family: 'Inter' } },
+          min: 0, max: 100,
+        },
+      },
+    },
+  });
+}
+
+function renderBarChart() {
+  const stocks = [...APP_STATE.rawData.stocks]
+    .sort((a, b) => b.control_score - a.control_score)
+    .slice(0, 20);
+
+  const ctx = document.getElementById('barChart').getContext('2d');
+
+  const labels = stocks.map(s => `${s.stock_id} ${s.name}`);
+  const values = stocks.map(s => s.control_score);
+  const colors = values.map(v =>
+    v >= 60 ? 'rgba(16, 185, 129, 0.7)' :
+    v >= 30 ? 'rgba(245, 158, 11, 0.7)' :
+              'rgba(239, 68, 68, 0.7)'
+  );
+  const borderColors = values.map(v =>
+    v >= 60 ? 'rgba(16, 185, 129, 1)' :
+    v >= 30 ? 'rgba(245, 158, 11, 1)' :
+              'rgba(239, 68, 68, 1)'
+  );
+
+  if (APP_STATE.barChart) APP_STATE.barChart.destroy();
+
+  APP_STATE.barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Control Score',
+        data: values,
+        backgroundColor: colors,
+        borderColor: borderColors,
+        borderWidth: 1,
+        borderRadius: 4,
+        barPercentage: 0.7,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(10, 14, 39, 0.95)',
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(99, 102, 241, 0.3)',
+          borderWidth: 1,
+          titleFont: { family: 'Inter', weight: '600' },
+          bodyFont: { family: 'Inter' },
+          padding: 12,
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(99, 102, 241, 0.06)' },
+          ticks: { color: '#64748b', font: { family: 'Inter' } },
+          min: 0, max: 100,
+          title: {
+            display: true,
+            text: 'Control Score',
+            color: '#64748b',
+            font: { family: 'Inter', size: 12, weight: '500' },
+          },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } },
+        },
+      },
+    },
+  });
+}
+
+/* ================================================================
+   EVENT BINDING
+   ================================================================ */
+function bindEvents() {
+  // Sorting
+  document.querySelectorAll('#mainTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (!col) return;
+      if (APP_STATE.sortColumn === col) {
+        APP_STATE.sortDirection = APP_STATE.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        APP_STATE.sortColumn = col;
+        APP_STATE.sortDirection = 'desc';
+      }
+      APP_STATE.expandedRow = null;
+      applyFiltersAndSort();
+    });
+  });
+
+  // Filter: Control Score slider
+  const csSlider = document.getElementById('filterCS');
+  csSlider.addEventListener('input', () => {
+    document.getElementById('csDisplay').textContent = `${csSlider.value} - 100`;
+    debounceFilter();
+  });
+
+  // Filter: Exit Score slider
+  const esSlider = document.getElementById('filterES');
+  esSlider.addEventListener('input', () => {
+    document.getElementById('esDisplay').textContent = `0 - ${esSlider.value}`;
+    debounceFilter();
+  });
+
+  // Filter: Rally Prob slider
+  const rpSlider = document.getElementById('filterRP');
+  rpSlider.addEventListener('input', () => {
+    document.getElementById('rpDisplay').textContent = `${rpSlider.value}%`;
+    debounceFilter();
+  });
+
+  // Select filters
+  document.getElementById('filterStage').addEventListener('change', () => { APP_STATE.expandedRow = null; applyFiltersAndSort(); });
+  document.getElementById('filterRec').addEventListener('change', () => { APP_STATE.expandedRow = null; applyFiltersAndSort(); });
+  document.getElementById('filterCategory').addEventListener('change', () => { APP_STATE.expandedRow = null; applyFiltersAndSort(); });
+
+  // Search
+  document.getElementById('filterSearch').addEventListener('input', debounceFilter);
+
+  // Reset
+  document.getElementById('btnReset').addEventListener('click', resetFilters);
+}
+
+let filterDebounceTimer = null;
+function debounceFilter() {
+  clearTimeout(filterDebounceTimer);
+  filterDebounceTimer = setTimeout(() => {
+    APP_STATE.expandedRow = null;
+    applyFiltersAndSort();
+  }, 200);
+}
+
+function resetFilters() {
+  document.getElementById('filterCS').value = 0;
+  document.getElementById('filterES').value = 100;
+  document.getElementById('filterRP').value = 0;
+  document.getElementById('filterStage').value = 'all';
+  document.getElementById('filterRec').value = 'all';
+  document.getElementById('filterCategory').value = 'all';
+  document.getElementById('filterSearch').value = '';
+  document.getElementById('csDisplay').textContent = '0 - 100';
+  document.getElementById('esDisplay').textContent = '0 - 100';
+  document.getElementById('rpDisplay').textContent = '0%';
+  APP_STATE.sortColumn = 'control_score';
+  APP_STATE.sortDirection = 'desc';
+  APP_STATE.expandedRow = null;
+  applyFiltersAndSort();
+}
+
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ================================================================
+   ELITE PICKS
+   ================================================================ */
+
+function getEliteCompositeScore(s) {
+  return (s.rally_prob_5d || 0) * 0.5 + (s.control_score || 0) * 0.3 - (s.exit_score || 0) * 0.2;
+}
+
+function renderElitePicks() {
+  const stocks = APP_STATE.rawData.stocks;
+  const scanDate = APP_STATE.rawData.scan_date || '';
+
+  // Sort by composite score and take top 8
+  const eliteStocks = [...stocks]
+    .map(s => ({ ...s, _compositeScore: getEliteCompositeScore(s) }))
+    .sort((a, b) => b._compositeScore - a._compositeScore)
+    .slice(0, 8);
+
+  // Build cards HTML
+  const cardsHtml = eliteStocks.map((s, idx) => {
+    const rank = idx + 1;
+    const changeCls = s.change_pct > 0 ? 'change-positive' : s.change_pct < 0 ? 'change-negative' : 'change-zero';
+    const changePrefix = s.change_pct > 0 ? '+' : '';
+
+    // Recommendation left border class
+    let recCls = 'rec-watch';
+    if (s.recommendation === '續抱') recCls = 'rec-hold';
+    else if (s.recommendation === '買進觀察') recCls = 'rec-buy';
+    else if (s.recommendation === '觀望') recCls = 'rec-watch';
+
+    // Stage badge
+    const stageBadge = STAGE_BADGE_MAP[s.stage] || 'badge-wash';
+    // Rec badge
+    const recBadge = REC_BADGE_MAP[s.recommendation] || 'badge-watch';
+
+    // Metric pills
+    const csPill = s.control_score >= 60 ? 'pill-green' : s.control_score >= 40 ? 'pill-yellow' : 'pill-red';
+    const rpPill = s.rally_prob_5d >= 60 ? 'pill-green' : s.rally_prob_5d >= 40 ? 'pill-yellow' : 'pill-red';
+    const esPill = s.exit_score < 20 ? 'pill-green' : s.exit_score < 35 ? 'pill-yellow' : 'pill-red';
+
+    const summary = s.plain_summary || '';
+    const topBrokerShow = s.top_brokers ? s.top_brokers.split(',').slice(0,3).join(',') : 'N/A';
+
+    return `
+      <div class="elite-card ${recCls}">
+        <div class="elite-rank">${rank}</div>
+        <div class="elite-bg-glow"></div>
+        <div class="elite-card-top">
+          <div class="elite-stock-info">
+            <div class="elite-stock-id">${s.stock_id} ${s.name}</div>
+          </div>
+          <div class="elite-price-wrap">
+            <div class="elite-price">${s.close.toLocaleString()}</div>
+            <div class="elite-change ${changeCls}">${changePrefix}${s.change_pct.toFixed(2)}%</div>
+          </div>
+        </div>
+        <div class="elite-summary">${escapeHTML(summary)}</div>
+        <div class="elite-metrics" style="margin-bottom: 8px;">
+          <span class="elite-pill pill-grey"><span class="elite-pill-label">主力成本</span><span class="elite-pill-value">${s.main_force_cost || 'N/A'}</span></span>
+          <span class="elite-pill pill-grey"><span class="elite-pill-label">分點</span><span class="elite-pill-value" style="max-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${s.top_brokers || ''}">${topBrokerShow}</span></span>
+          <span class="elite-pill pill-grey"><span class="elite-pill-label">主力庫存</span><span class="elite-pill-value">${s.main_force_vol ? s.main_force_vol.toLocaleString() + '張' : 'N/A'}</span></span>
+        </div>
+        <div class="elite-metrics">
+          <span class="elite-pill ${csPill}"><span class="elite-pill-label">控盤分數</span><span class="elite-pill-value">${s.control_score.toFixed(1)}</span></span>
+          <span class="elite-pill ${rpPill}"><span class="elite-pill-label">5日漲機率</span><span class="elite-pill-value">${s.rally_prob_5d.toFixed(1)}%</span></span>
+          <span class="elite-pill ${esPill}"><span class="elite-pill-label">出場風險</span><span class="elite-pill-value">${s.exit_score.toFixed(1)}</span></span>
+        </div>
+        <div class="elite-badges" style="margin-bottom: 12px;">
+          <span class="badge ${stageBadge}">${s.stage}</span>
+          <span class="badge ${recBadge}">${s.recommendation}</span>
+        </div>
+        <div class="elite-actions" style="display:flex; gap:8px;">
+          <button class="action-btn ai-btn" onclick="openAiModal('${s.stock_id}'); event.stopPropagation();">
+            ✨ AI 解析
+          </button>
+          <a class="action-btn yahoo-btn" href="https://tw.stock.yahoo.com/quote/${s.stock_id}/technical-analysis" target="_blank" onclick="event.stopPropagation();">
+            📊 Yahoo K線
+          </a>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('eliteSection').innerHTML = `
+    <div class="elite-header">
+      <div class="elite-header-left">
+        <div class="elite-title">🎯 今日精選</div>
+        <div class="elite-subtitle">精選 ${eliteStocks.length} 檔高綜合評分標的 ｜ ${scanDate}</div>
+      </div>
+      
+    </div>
+    <div class="elite-grid">
+      ${cardsHtml}
+    </div>
+  `;
+}
+
+
+function openAiModal(stockId) {
+  const stock = APP_STATE.rawData.stocks.find(s => s.stock_id === stockId);
+  if (!stock) return;
+  document.getElementById('aiModalTitle').textContent = `${stock.stock_id} ${stock.name} - Gemini AI 解析`;
+  const reportHTML = stock.ai_report ? `<div class="ai-report-text">${escapeHTML(stock.ai_report)}</div>` : '<div>尚無 AI 報告資料。</div>';
+  document.getElementById('aiModalBody').innerHTML = reportHTML;
+  document.getElementById('aiModal').classList.add('show');
+}
+
+function closeAiModal(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('aiModal').classList.remove('show');
+}
+
+function toggleDetailSection() {
+  const wrapper = document.getElementById('detailSectionWrapper');
+  const btn = document.getElementById('btnToggleDetail');
+  if (!wrapper || !btn) return;
+
+  const isExpanded = wrapper.classList.contains('expanded');
+  if (isExpanded) {
+    wrapper.classList.remove('expanded');
+    btn.textContent = '展開完整表格 ▼';
+  } else {
+    wrapper.classList.add('expanded');
+    btn.textContent = '收合完整表格 ▲';
+  }
+}
+
+/* ================================================================
+   BOOTSTRAP
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+
+<div id="aiModal" class="modal-overlay" onclick="closeAiModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="aiModalTitle">AI 分析報告</h3>
+      <button class="modal-close" onclick="closeAiModal(event)">&times;</button>
+    </div>
+    <div class="modal-body" id="aiModalBody"></div>
+  </div>
+</div>
+</body>
+</html>
