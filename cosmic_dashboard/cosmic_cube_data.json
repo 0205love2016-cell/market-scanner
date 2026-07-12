@@ -1,0 +1,146 @@
+{
+  "update_time": "2026-07-12 16:00",
+  "regime": "多頭環境",
+  "elite_picks": [
+    {
+      "stock_id": "2330",
+      "stock_name": "台積電",
+      "hurst": 0.5824,
+      "chip_purity": 0.46,
+      "profit_rate": -1.2,
+      "cost_short": 980.0,
+      "current_price": 970.0,
+      "pressure_ratio": 0.15,
+      "nash_target": 1150.0,
+      "upside_potential": 18.5,
+      "safe_qty": 3,
+      "leaders": [
+        "台灣摩根士丹利",
+        "美商高盛"
+      ],
+      "is_turnaround": true,
+      "anomaly_score": -1,
+      "resonance": 4,
+      "inventory_diff": 2400,
+      "cumulative_buy": 12000
+    }
+  ],
+  "picks_fin": [
+    {
+      "stock_id": "2881",
+      "stock_name": "富邦金",
+      "hurst": 0.5121,
+      "chip_purity": 0.41,
+      "profit_rate": -0.8,
+      "cost_short": 82.5,
+      "current_price": 81.8,
+      "pressure_ratio": 0.22,
+      "nash_target": 92.0,
+      "upside_potential": 12.4,
+      "safe_qty": 8,
+      "leaders": [
+        "新加坡商瑞銀",
+        "國泰"
+      ],
+      "is_turnaround": false,
+      "anomaly_score": 1,
+      "resonance": 1,
+      "inventory_diff": 850,
+      "cumulative_buy": 6400
+    },
+    {
+      "stock_id": "2882",
+      "stock_name": "國泰金",
+      "hurst": 0.4982,
+      "chip_purity": 0.39,
+      "profit_rate": -2.1,
+      "cost_short": 58.0,
+      "current_price": 56.8,
+      "pressure_ratio": 0.28,
+      "nash_target": 63.5,
+      "upside_potential": 11.7,
+      "safe_qty": 12,
+      "leaders": [
+        "美商高盛",
+        "元大"
+      ],
+      "is_turnaround": false,
+      "anomaly_score": 1,
+      "resonance": 2,
+      "inventory_diff": 1200,
+      "cumulative_buy": 8900
+    }
+  ],
+  "picks_ind": [
+    {
+      "stock_id": "2303",
+      "stock_name": "聯電",
+      "hurst": 0.5421,
+      "chip_purity": 0.45,
+      "profit_rate": -1.8,
+      "cost_short": 52.5,
+      "current_price": 51.5,
+      "pressure_ratio": 0.18,
+      "nash_target": 61.0,
+      "upside_potential": 18.4,
+      "safe_qty": 15,
+      "leaders": [
+        "台灣摩根士丹利",
+        "花旗環球"
+      ],
+      "is_turnaround": true,
+      "anomaly_score": -1,
+      "resonance": 3,
+      "inventory_diff": 4500,
+      "cumulative_buy": 21000
+    },
+    {
+      "stock_id": "2454",
+      "stock_name": "聯發科",
+      "hurst": 0.5312,
+      "chip_purity": 0.43,
+      "profit_rate": -2.5,
+      "cost_short": 1250.0,
+      "current_price": 1220.0,
+      "pressure_ratio": 0.32,
+      "nash_target": 1420.0,
+      "upside_potential": 16.3,
+      "safe_qty": 2,
+      "leaders": [
+        "美商高盛",
+        "凱基"
+      ],
+      "is_turnaround": false,
+      "anomaly_score": 1,
+      "resonance": 2,
+      "inventory_diff": 320,
+      "cumulative_buy": 3500
+    }
+  ],
+  "picks_rocket": [
+    {
+      "stock_id": "3521",
+      "stock_name": "鴻海",
+      "hurst": 0.6124,
+      "chip_purity": 0.48,
+      "profit_rate": -0.5,
+      "cost_short": 210.0,
+      "current_price": 209.0,
+      "pressure_ratio": 0.12,
+      "nash_target": 255.0,
+      "upside_potential": 22.0,
+      "safe_qty": 5,
+      "leaders": [
+        "台灣摩根士丹利",
+        "新加坡商瑞銀",
+        "美商高盛"
+      ],
+      "is_turnaround": true,
+      "anomaly_score": -1,
+      "resonance": 5,
+      "inventory_diff": 8900,
+      "cumulative_buy": 45000
+    }
+  ],
+  "ai_analysis": "### 今日戰略解讀\n1. **大盤走勢分析**：目前市場維持多頭格局，加權指數在20日均線之上震盪，整體追價意願強烈。資金主要流向半導體與權值股。\n2. **主流族群解析**：以鴻海為首的AI供應鏈動能最強，Hurst值達到0.61，顯示明顯的趨勢慣性。半導體板塊中聯電展現翻紅重倉訊號，法人籌碼純度高。\n3. **防禦性配置**：金融股表現平穩，富邦金與國泰金在庫存增加下可作為波動加劇時的避險配置。\n4. **操作策略建議**：建議針對精選個股進行防守布局。若大盤拉回至支撐位，可適度分批加碼帝王飆股與產業龍頭。"
+}
