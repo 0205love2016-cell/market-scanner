@@ -614,6 +614,22 @@ body::after {
   .kpi-strip { grid-template-columns: repeat(2, 1fr); }
   .hdr { flex-direction: column; text-align: center; }
 }
+
+/* Theme Switch Slider */
+.theme-switch {
+  position: relative; display: inline-block; width: 44px; height: 24px;
+}
+.theme-switch input { opacity: 0; width: 0; height: 0; }
+.theme-switch .slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border-strong, #475569); transition: .3s; border-radius: 24px;
+}
+.theme-switch .slider:before {
+  position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background-color: #fff; transition: .3s; border-radius: 50%;
+}
+.theme-switch input:checked + .slider { background-color: var(--primary, #6366f1); }
+.theme-switch input:checked + .slider:before { transform: translateX(20px); }
 </style>
 </head>
 <body>
@@ -644,9 +660,13 @@ body::after {
         </div>
       </div>
       <div class="hdr-actions">
-      <button id="themeToggleBtn" class="btn-nav" onclick="toggleTheme()" title="切換黑白模式">
-        🌓 切換模式
-      </button>
+      <div style="display:inline-flex; align-items:center; gap:8px; margin-left:12px; vertical-align: middle;" title="深淺色模式切換">
+        <span style="font-size:0.85rem; color:var(--text-muted);">🌓</span>
+        <label class="theme-switch" style="margin-bottom:0;">
+          <input type="checkbox" id="themeCheckbox" onchange="handleThemeSwitch(this)">
+          <span class="slider round"></span>
+        </label>
+      </div>
         <a href="dashboard.html" class="btn-nav">📋 詳細表格版</a>
       </div>
     </header>
@@ -1315,22 +1335,26 @@ document.addEventListener('DOMContentLoaded', loadData);
 
 <script>
   // Theme Toggle Logic
-  function toggleTheme() {
+  function handleThemeSwitch(cb) {
     try {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  
-  } catch(e) {}
-}
+      const newTheme = cb.checked ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    } catch(e) {}
+  }
   
   // Initialize theme from local storage
   (function() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        window.addEventListener('DOMContentLoaded', () => {
+          const cb = document.getElementById('themeCheckbox');
+          if(cb) cb.checked = (savedTheme === 'light');
+        });
+      }
+    } catch(e) {}
   })();
 </script>
 
