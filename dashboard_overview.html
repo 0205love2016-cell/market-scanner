@@ -712,11 +712,11 @@ body::after {
             <span style="color:var(--color-danger);">ES (出場風險)</span>：主力趁高倒貨風險。分數越高(>40)，風險極大，主力可能正撤退。<br>
             <hr style="border:0; border-top:1px solid var(--bg-card-hover); margin: 8px 0;">
             <strong>【操作建議】</strong><br>
-            <span style="color:var(--color-primary);">買進觀察</span>：高控盤 + 低風險 + 有動能。最佳右側順勢買點。<br>
-            <span style="color:var(--color-accent);">農底觀察</span>：股價跌入虧損攤平區且主力未放棄。最佳左側逆勢買點。<br>
-            <span style="color:#64748B;">持有</span>：主力溫和控盤，短線動能未出。耐心等待。<br>
-            <span style="color:#F59E0B;">觀望</span>：分數平庸無明顯訊號。建議避開。<br>
-            <span style="color:var(--color-danger);">減碼</span>：進入獲利出貨區或高檔倒貨。盡速了結/避開。<br>
+            <span style="color:var(--success);">買進觀察</span>：高控盤 + 低風險 + 有動能。最佳右側順勢買點。<br>
+            <span style="color:var(--info);">農底觀察</span>：股價跌入虧損攤平區且主力未放棄。最佳左側逆勢買點。<br>
+            <span style="color:var(--text-muted);">持有</span>：主力溫和控盤，短線動能未出。耐心等待。<br>
+            <span style="color:var(--warning);">觀望</span>：分數平庸無明顯訊號。建議避開。<br>
+            <span style="color:var(--danger);">減碼</span>：進入獲利出貨區或高檔倒貨。盡速了結/避開。<br>
           </div>
         </div>
       </aside>
@@ -1311,11 +1311,14 @@ document.addEventListener('DOMContentLoaded', loadData);
 <script>
   // Theme Toggle Logic
   function toggleTheme() {
+    try {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-  }
+  
+  } catch(e) {}
+}
   
   // Initialize theme from local storage
   (function() {
