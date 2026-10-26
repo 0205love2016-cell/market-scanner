@@ -1,6 +1,6 @@
 {
-  "scan_date": "2026-10-23",
-  "scan_timestamp": "2026-10-23T18:02:07.411519",
+  "scan_date": "2026-10-26",
+  "scan_timestamp": "2026-10-26T18:01:58.436247",
   "total_scanned": 2789,
   "stage1_count": 200,
   "stage2_count": 0,
@@ -8,8 +8,8 @@
   "stocks": [],
   "ai_reports": [],
   "available_dates": [
+    "2026-10-26",
     "2026-10-23",
-    "2026-10-22",
-    "2026-10-21"
+    "2026-10-22"
   ]
 }
